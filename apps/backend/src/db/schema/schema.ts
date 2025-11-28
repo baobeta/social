@@ -21,6 +21,7 @@ export const users = pgTable('users', {
   password: varchar('password', { length: 255 }).notNull(), // bcrypt hashed
   fullName: varchar('full_name', { length: 100 }).notNull(),
   displayName: varchar('display_name', { length: 100 }), // For UC-04: Edit profile
+  initials: varchar('initials', { length: 10 }).notNull().default(''),
   role: userRoleEnum('role').notNull().default('user'),
 
   // Full-text search vector (automatically updated via generated column)

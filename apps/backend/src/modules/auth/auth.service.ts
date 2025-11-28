@@ -1,5 +1,6 @@
 import { hashPassword, comparePassword } from '../../lib/password.ts';
 import { generateToken } from '../../lib/jwt.ts';
+import { generateInitials } from '../../lib/initials.js';
 import { AuthRepository } from './auth.repository.ts';
 import type { RegisterDto, LoginDto, AuthResponse } from './auth.dto.ts';
 
@@ -30,6 +31,7 @@ export class AuthService {
       password: hashedPassword,
       fullName: data.fullName,
       displayName: data.displayName || null,
+      initials: generateInitials(data.fullName),
       role: 'user',
     });
 

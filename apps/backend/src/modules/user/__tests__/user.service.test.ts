@@ -73,7 +73,10 @@ describe('UserService - Unit Tests', () => {
       const result = await service.updateProfile(mockUser.id, updateData);
 
       expect(mockRepository.findById).toHaveBeenCalledWith(mockUser.id);
-      expect(mockRepository.updateProfile).toHaveBeenCalledWith(mockUser.id, updateData);
+      expect(mockRepository.updateProfile).toHaveBeenCalledWith(mockUser.id, {
+        fullName: 'Updated Name',
+        initials: 'UN', // "Updated Name" -> "UN"
+      });
       expect(result.user.fullName).toBe('Updated Name');
       expect(result.user.updatedAt).toEqual(new Date('2024-01-02'));
     });
@@ -100,7 +103,11 @@ describe('UserService - Unit Tests', () => {
 
       const result = await service.updateProfile(mockUser.id, updateData);
 
-      expect(mockRepository.updateProfile).toHaveBeenCalledWith(mockUser.id, updateData);
+      expect(mockRepository.updateProfile).toHaveBeenCalledWith(mockUser.id, {
+        fullName: 'New Full Name',
+        displayName: 'New Display',
+        initials: 'NN', // "New Full Name" -> "NN"
+      });
       expect(result.user.fullName).toBe('New Full Name');
       expect(result.user.displayName).toBe('New Display');
     });

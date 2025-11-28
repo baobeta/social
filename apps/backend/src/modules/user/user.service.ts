@@ -1,5 +1,6 @@
 import { UserRepository } from './user.repository.js';
 import type { UpdateProfileDto, UserResponse, UpdateProfileResponse } from './user.dto.js';
+import { generateInitials } from '../../lib/initials.js';
 
 /**
  * Service for user profile management
@@ -60,10 +61,11 @@ export class UserService {
     }
 
     // Build update data object (only include fields that were provided)
-    const updateData: { fullName?: string; displayName?: string | null } = {};
+    const updateData: { fullName?: string; displayName?: string | null; initials?: string } = {};
 
     if (data.fullName !== undefined) {
       updateData.fullName = data.fullName;
+      updateData.initials = generateInitials(data.fullName); // Regenerate initials when name changes
     }
 
     if (data.displayName !== undefined) {

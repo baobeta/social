@@ -1,6 +1,7 @@
 import { db } from './setup.js';
 import { users, posts, comments, type NewUser, type NewPost, type NewComment } from '../db/schema/index.js';
 import { hashPassword } from '../lib/password.js';
+import { generateInitials } from '../lib/initials.js';
 
 /**
  * Test fixtures and factory functions for creating test data
@@ -13,15 +14,21 @@ import { hashPassword } from '../lib/password.js';
  * Create a test user in the database
  */
 export async function createTestUser(overrides?: Partial<NewUser>) {
+  const fullName = overrides?.fullName || 'Test User';
   const defaultUser: NewUser = {
     username: `testuser_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
     password: await hashPassword('password123'),
-    fullName: 'Test User',
+    fullName,
     displayName: 'Tester',
+    initials: generateInitials(fullName),
     role: 'user',
   };
 
   const userData = { ...defaultUser, ...overrides };
+  // Regenerate initials if fullName was overridden
+  if (overrides?.fullName && !overrides?.initials) {
+    userData.initials = generateInitials(overrides.fullName);
+  }
 
   const [user] = await db.insert(users).values(userData).returning();
   return user!;

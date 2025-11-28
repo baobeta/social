@@ -25,12 +25,12 @@ export class UserRepository {
   /**
    * Update user profile fields
    * @param id - User ID
-   * @param data - Fields to update (fullName, displayName)
+   * @param data - Fields to update (fullName, displayName, initials)
    * @returns Updated user object
    */
   async updateProfile(
     id: string,
-    data: { fullName?: string; displayName?: string | null }
+    data: { fullName?: string; displayName?: string | null; initials?: string }
   ): Promise<User> {
     const result = await db
       .update(users)
