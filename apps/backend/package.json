@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:setup": "./scripts/setup-test-db.sh",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",

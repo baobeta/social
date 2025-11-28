@@ -92,3 +92,11 @@ docs/*
 .claude/settings.local.json
 apps/backend/AUTHENTICATION_SUMMARY.md
 apps/backend/QUICK_START_AUTH.md
+apps/backend/docs/DATABASE-ARCHITECTURE.md
+apps/backend/docs/database-separation.md
+.gitignore
+.gitignore
+apps/backend/QUICKSTART-DATABASE.md
+.gitignore
+apps/backend/docs/TESTING.md
+apps/backend/docs/SETUP-SUMMARY.md

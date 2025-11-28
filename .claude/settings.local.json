@@ -17,7 +17,8 @@
       "Bash(npm run typecheck:*)",
       "Bash(timeout 3 npm run dev:*)",
       "Bash(npx tsx -v)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

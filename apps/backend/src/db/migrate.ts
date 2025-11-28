@@ -24,7 +24,7 @@ const runMigrations = async () => {
     logger.info('Migrations completed successfully');
   } catch (error) {
     console.error('Full migration error:', error);
-    logger.error('Migration failed:', error);
+    logger.error('Migration failed:', error as any);
     process.exit(1);
   } finally {
     await connection.end();

@@ -9,6 +9,7 @@ const envSchema = z.object({
   PORT: z.string().default('3000'),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string(),
+  TEST_DATABASE_URL: z.string().optional(),
   JWT_SECRET: z.string(),
   JWT_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
@@ -35,7 +36,9 @@ export const config = {
   isProduction: env.NODE_ENV === 'production',
   isTest: env.NODE_ENV === 'test',
   database: {
-    url: env.DATABASE_URL,
+    url: env.NODE_ENV === 'test' && env.TEST_DATABASE_URL
+      ? env.TEST_DATABASE_URL
+      : env.DATABASE_URL,
   },
   auth: {
     jwtSecret: env.JWT_SECRET,

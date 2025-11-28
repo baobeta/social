@@ -1,9 +1,12 @@
-import { db } from '../db/index.ts';
-import { users, type NewUser } from '../db/schema/index.ts';
-import { hashPassword } from '../lib/password.ts';
+import { db } from './setup.js';
+import { users, type NewUser } from '../db/schema/index.js';
+import { hashPassword } from '../lib/password.js';
 
 /**
  * Test fixtures and factory functions for creating test data
+ *
+ * IMPORTANT: This module uses the test database connection from setup.js
+ * to ensure test data doesn't pollute the development database.
  */
 
 /**
