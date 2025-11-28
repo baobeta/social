@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose up:*)",
+      "Bash(docker:*)",
+      "Bash(psql:*)",
+      "Bash(redis-cli:*)",
+      "Bash(createdb:*)",
+      "Bash(npm run db:migrate:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
