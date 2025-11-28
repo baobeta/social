@@ -4,6 +4,9 @@ import cors from 'cors';
 import { config } from './lib/config.js';
 import { logger } from './lib/logger.js';
 import { errorHandler } from './middleware/error-handler.js';
+import { securityHeaders, customSecurityHeaders, requestId } from './middleware/security.middleware.js';
+import { authRateLimit, apiRateLimit, contentCreationRateLimit } from './middleware/rate-limit.middleware.js';
+import { sanitizeInput, preventNoSQLInjection } from './middleware/sanitize.middleware.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/user/user.routes.js';
 import searchRoutes from './modules/search/search.routes.js';
@@ -12,28 +15,47 @@ import commentRoutes from './modules/comment/comment.routes.js';
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Request tracking - add unique ID to each request
+app.use(requestId);
+
+// Enhanced security headers with comprehensive CSP, HSTS, etc.
+app.use(securityHeaders());
+app.use(customSecurityHeaders);
+
+// CORS configuration with credentials support
 app.use(cors({
   origin: config.cors.origin,
   credentials: true,
 }));
 
 // Body parsing middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Limit payload size
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check endpoint
+// Security middleware - must be before routes
+app.use(preventNoSQLInjection); // Prevent NoSQL injection attacks
+app.use(sanitizeInput); // Sanitize all user input
+
+// Health check endpoint (no rate limit)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/posts', postRoutes);
-app.use('/api/search', searchRoutes);
-app.use('/api', commentRoutes); // Comment routes include both /posts/:postId/comments and /comments/:id
+// API routes with rate limiting
+// Auth routes - strict rate limiting to prevent brute force attacks
+app.use('/api/auth', authRateLimit, authRoutes);
+
+// User routes - standard rate limiting
+app.use('/api/users', apiRateLimit, userRoutes);
+
+// Search routes - standard rate limiting
+app.use('/api/search', apiRateLimit, searchRoutes);
+
+// Post routes - content creation rate limiting to prevent spam
+app.use('/api/posts', apiRateLimit, postRoutes);
+
+// Comment routes - content creation rate limiting to prevent spam
+app.use('/api', apiRateLimit, commentRoutes); // Comment routes include both /posts/:postId/comments and /comments/:id
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

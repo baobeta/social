@@ -1,6 +1,7 @@
 import { hashPassword, comparePassword } from '../../lib/password.ts';
 import { generateToken } from '../../lib/jwt.ts';
 import { generateInitials } from '../../lib/initials.js';
+import { validatePasswordStrength } from '../../lib/password-validator.js';
 import { AuthRepository } from './auth.repository.ts';
 import type { RegisterDto, LoginDto, AuthResponse } from './auth.dto.ts';
 
@@ -13,9 +14,15 @@ export class AuthService {
 
   /**
    * Register a new user
-   * @throws Error if username already exists
+   * @throws Error if username already exists or password is weak
    */
   async register(data: RegisterDto): Promise<AuthResponse> {
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(data.password);
+    if (!passwordValidation.valid) {
+      throw new Error(`Weak password: ${passwordValidation.errors.join(', ')}`);
+    }
+
     // Check if username already exists
     const existingUser = await this.repository.findByUsername(data.username);
     if (existingUser) {
