@@ -1,16 +1,36 @@
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'crypto';
 import { config } from './config.ts';
 import type { TokenPayload } from '../modules/auth/auth.dto.ts';
 
 /**
+ * Generate a short-lived access token (15 minutes)
+ * @param payload - Token payload containing user information
+ * @returns JWT access token string
+ */
+export function generateAccessToken(payload: TokenPayload): string {
+  return jwt.sign(payload, config.auth.jwtSecret, {
+    expiresIn: '15m', // Short-lived access token
+  });
+}
+
+/**
+ * Generate a long-lived refresh token (7 days)
+ * Returns a cryptographically secure random string
+ * @returns Refresh token string
+ */
+export function generateRefreshToken(): string {
+  return randomBytes(64).toString('hex'); // 128 character hex string
+}
+
+/**
+ * @deprecated Use generateAccessToken instead
  * Generate a JWT token for a user
  * @param payload - Token payload containing user information
  * @returns JWT token string
  */
 export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, config.auth.jwtSecret, {
-    expiresIn: config.auth.jwtExpiresIn,
-  });
+  return generateAccessToken(payload);
 }
 
 /**

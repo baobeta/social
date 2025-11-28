@@ -48,7 +48,8 @@ export interface AuthResponse {
     displayName: string | null;
     role: 'user' | 'admin';
   };
-  token: string;
+  token: string; // Access token (short-lived, 15 minutes)
+  refreshToken: string; // Refresh token (long-lived, 7 days)
 }
 
 export interface TokenPayload {

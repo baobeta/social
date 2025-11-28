@@ -38,6 +38,33 @@ export const users = pgTable('users', {
 }));
 
 // ============================================================================
+// REFRESH TOKENS TABLE
+// ============================================================================
+
+export const refreshTokens = pgTable('refresh_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  token: varchar('token', { length: 500 }).notNull().unique(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+
+  // Track device/browser for security
+  userAgent: varchar('user_agent', { length: 500 }),
+  ipAddress: varchar('ip_address', { length: 50 }),
+
+  // Revocation support
+  isRevoked: boolean('is_revoked').notNull().default(false),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+}, (table) => ({
+  // Index for quick token lookup
+  tokenIdx: index('refresh_tokens_token_idx').on(table.token),
+  // Index for user's tokens
+  userIdx: index('refresh_tokens_user_idx').on(table.userId),
+  // Index for cleanup expired tokens
+  expiresIdx: index('refresh_tokens_expires_idx').on(table.expiresAt),
+}));
+
+// ============================================================================
 // POSTS TABLE
 // ============================================================================
 
