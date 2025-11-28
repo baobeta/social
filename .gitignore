@@ -112,3 +112,7 @@ apps/backend/TESTING-N+1.md
 apps/backend/N+1-TESTING-SUMMARY.md
 apps/backend/COMMENT-IMPLEMENTATION-SUMMARY.md
 apps/backend/COMMENT-API-QUICK-REF.md
+apps/frontend/SETUP.md
+apps/frontend/API_ROUTES.md
+JWT_AUTHENTICATION.md
+.gitignore
