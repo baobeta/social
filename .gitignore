@@ -80,8 +80,13 @@ apps/backend/src/db/migrations/meta/
 # Claude Code files
 CLAUDE.md
 AGENTS.md
+SETUP_COMPLETE.MD
+IMPORT_GUIDE
+.claude/*
 docs/*
 
 # Test files (optional - uncomment if you want to ignore)
 # **/*.test.ts
 # **/*.spec.ts
+.claude/settings.local.json
+.claude/settings.local.json

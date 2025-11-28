@@ -4,6 +4,15 @@ import { join } from 'path';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Plugin to resolve .ts imports to actual .ts files
+const resolveTs = {
+  name: 'resolve-ts',
+  setup(build) {
+    // No-op: esbuild handles .ts resolution natively
+    // This plugin is just a placeholder for future custom logic
+  },
+};
+
 async function build() {
   try {
     console.log('🔨 Building with esbuild...');
@@ -38,6 +47,9 @@ async function build() {
 
       // Resolve .ts extensions properly
       resolveExtensions: ['.ts', '.js', '.json'],
+
+      // Add plugin for custom resolution
+      plugins: [resolveTs],
 
       // Keep package.json type: "module" working
       banner: {

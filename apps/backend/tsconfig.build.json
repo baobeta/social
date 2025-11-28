@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Override for build - allow emitting files
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+
+    // Emit declaration files for type checking
+    "declaration": true,
+    "declarationMap": true
+  },
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+}

@@ -1,8 +1,2 @@
-// Export all schema definitions here
-// Example:
-// export * from './users.js';
-// export * from './posts.js';
-// export * from './comments.js';
-
-// Placeholder for schema exports
-export {};
+// Export all schema definitions from the consolidated schema file
+export * from './schema.ts';

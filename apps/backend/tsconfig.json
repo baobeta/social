@@ -6,7 +6,11 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals"],
+
+    // Allow .ts extensions in development (tsx will handle it)
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]

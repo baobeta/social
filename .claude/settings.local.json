@@ -6,7 +6,17 @@
       "Bash(psql:*)",
       "Bash(redis-cli:*)",
       "Bash(createdb:*)",
-      "Bash(npm run db:migrate:*)"
+      "Bash(npm run db:migrate:*)",
+      "Bash(npm run db:generate:*)",
+      "Bash(npm run db:push:*)",
+      "Bash(pkill:*)",
+      "Bash(npm run build:*)",
+      "Bash(node --loader tsx --no-warnings src/db/migrate.ts:*)",
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(timeout 3 npm run dev:*)",
+      "Bash(npx tsx -v)"
     ],
     "deny": [],
     "ask": []
