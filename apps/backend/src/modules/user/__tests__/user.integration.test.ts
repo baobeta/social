@@ -3,6 +3,7 @@ import { UserService } from '../user.service.js';
 import { UserRepository } from '../user.repository.js';
 import { createTestUser } from '../../../test/fixtures.js';
 import { cleanDatabase } from '../../../test/setup.js';
+import type { AuthUser } from '../../../lib/authorization.js';
 
 /**
  * Integration tests for UserService
@@ -55,8 +56,9 @@ describe('UserService - Integration Tests', () => {
         username: 'updatetest',
         fullName: 'Original Name',
       });
+      const authUser: AuthUser = { userId: testUser.id, username: testUser.username, role: testUser.role };
 
-      const result = await service.updateProfile(testUser.id, {
+      const result = await service.updateProfile(authUser, testUser.id, {
         fullName: 'Updated Name',
       });
 
@@ -73,8 +75,9 @@ describe('UserService - Integration Tests', () => {
         username: 'displaytest',
         displayName: 'Old Display',
       });
+      const authUser: AuthUser = { userId: testUser.id, username: testUser.username, role: testUser.role };
 
-      const result = await service.updateProfile(testUser.id, {
+      const result = await service.updateProfile(authUser, testUser.id, {
         displayName: 'New Display',
       });
 
@@ -91,8 +94,9 @@ describe('UserService - Integration Tests', () => {
         fullName: 'Old Full Name',
         displayName: 'Old Display',
       });
+      const authUser: AuthUser = { userId: testUser.id, username: testUser.username, role: testUser.role };
 
-      const result = await service.updateProfile(testUser.id, {
+      const result = await service.updateProfile(authUser, testUser.id, {
         fullName: 'New Full Name',
         displayName: 'New Display Name',
       });
@@ -111,8 +115,9 @@ describe('UserService - Integration Tests', () => {
         username: 'cleardisplay',
         displayName: 'Has Display Name',
       });
+      const authUser: AuthUser = { userId: testUser.id, username: testUser.username, role: testUser.role };
 
-      const result = await service.updateProfile(testUser.id, {
+      const result = await service.updateProfile(authUser, testUser.id, {
         displayName: null,
       });
 
@@ -127,13 +132,14 @@ describe('UserService - Integration Tests', () => {
       const testUser = await createTestUser({
         username: 'timestamptest',
       });
+      const authUser: AuthUser = { userId: testUser.id, username: testUser.username, role: testUser.role };
 
       const originalUpdatedAt = testUser.updatedAt;
 
       // Wait a bit to ensure timestamp difference
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      const result = await service.updateProfile(testUser.id, {
+      const result = await service.updateProfile(authUser, testUser.id, {
         fullName: 'Updated Name',
       });
 
@@ -143,9 +149,10 @@ describe('UserService - Integration Tests', () => {
     it('should not affect other users when updating', async () => {
       const user1 = await createTestUser({ username: 'user1', fullName: 'User One' });
       const user2 = await createTestUser({ username: 'user2', fullName: 'User Two' });
+      const authUser1: AuthUser = { userId: user1.id, username: user1.username, role: user1.role };
 
       // Update user1
-      await service.updateProfile(user1.id, { fullName: 'Updated User One' });
+      await service.updateProfile(authUser1, user1.id, { fullName: 'Updated User One' });
 
       // Verify user2 unchanged
       const user2AfterUpdate = await repository.findById(user2.id);
@@ -157,8 +164,9 @@ describe('UserService - Integration Tests', () => {
         username: 'preservetest',
         role: 'user',
       });
+      const authUser: AuthUser = { userId: testUser.id, username: testUser.username, role: testUser.role };
 
-      await service.updateProfile(testUser.id, {
+      await service.updateProfile(authUser, testUser.id, {
         fullName: 'New Name',
       });
 
@@ -172,15 +180,16 @@ describe('UserService - Integration Tests', () => {
         username: 'multiupdate',
         fullName: 'Original',
       });
+      const authUser: AuthUser = { userId: testUser.id, username: testUser.username, role: testUser.role };
 
       // First update
-      await service.updateProfile(testUser.id, { fullName: 'First Update' });
+      await service.updateProfile(authUser, testUser.id, { fullName: 'First Update' });
 
       // Second update
-      await service.updateProfile(testUser.id, { fullName: 'Second Update' });
+      await service.updateProfile(authUser, testUser.id, { fullName: 'Second Update' });
 
       // Third update
-      const finalResult = await service.updateProfile(testUser.id, {
+      const finalResult = await service.updateProfile(authUser, testUser.id, {
         fullName: 'Final Update',
       });
 
@@ -234,6 +243,7 @@ describe('UserService - Integration Tests', () => {
         fullName: 'Lifecycle Test User',
         displayName: 'Lifecycle',
       });
+      const authUser: AuthUser = { userId: testUser.id, username: testUser.username, role: testUser.role };
 
       // 2. Get user by ID
       const userById = await service.getUserById(testUser.id);
@@ -244,19 +254,19 @@ describe('UserService - Integration Tests', () => {
       expect(userByUsername.id).toBe(testUser.id);
 
       // 4. Update full name
-      const updated1 = await service.updateProfile(testUser.id, {
+      const updated1 = await service.updateProfile(authUser, testUser.id, {
         fullName: 'Updated Full Name',
       });
       expect(updated1.user.fullName).toBe('Updated Full Name');
 
       // 5. Update display name
-      const updated2 = await service.updateProfile(testUser.id, {
+      const updated2 = await service.updateProfile(authUser, testUser.id, {
         displayName: 'New Display',
       });
       expect(updated2.user.displayName).toBe('New Display');
 
       // 6. Clear display name
-      const updated3 = await service.updateProfile(testUser.id, {
+      const updated3 = await service.updateProfile(authUser, testUser.id, {
         displayName: null,
       });
       expect(updated3.user.displayName).toBeNull();

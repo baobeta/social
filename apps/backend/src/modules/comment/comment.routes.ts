@@ -15,23 +15,23 @@ router.post('/posts/:postId/comments', authenticate, controller.createComment);
 /**
  * @route   GET /api/posts/:postId/comments
  * @desc    Get top-level comments for a post (paginated)
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/posts/:postId/comments', controller.getCommentsByPost);
+router.get('/posts/:postId/comments', authenticate, controller.getCommentsByPost);
 
 /**
  * @route   GET /api/comments/:id
  * @desc    Get a single comment by ID
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/comments/:id', controller.getCommentById);
+router.get('/comments/:id', authenticate, controller.getCommentById);
 
 /**
  * @route   GET /api/comments/:id/replies
  * @desc    Get replies for a comment (paginated)
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/comments/:id/replies', controller.getReplies);
+router.get('/comments/:id/replies', authenticate, controller.getReplies);
 
 /**
  * @route   PATCH /api/comments/:id

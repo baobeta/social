@@ -58,4 +58,23 @@ export class UserRepository {
 
     return result[0];
   }
+
+  /**
+   * Update user role
+   * @param id - User ID
+   * @param role - New role ('user' | 'admin')
+   * @returns Updated user object
+   */
+  async updateRole(id: string, role: 'user' | 'admin'): Promise<User> {
+    const result = await db
+      .update(users)
+      .set({
+        role,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+
+    return result[0]!;
+  }
 }

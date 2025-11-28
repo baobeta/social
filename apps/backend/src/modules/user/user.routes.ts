@@ -22,8 +22,8 @@ router.patch('/me', authenticate, controller.updateMyProfile);
 /**
  * @route   GET /api/users/:id
  * @desc    Get user profile by ID
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/:id', controller.getUserById);
+router.get('/:id', authenticate, controller.getUserById);
 
 export default router;

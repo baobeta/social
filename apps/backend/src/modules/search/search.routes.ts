@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { SearchController } from './search.controller.js';
+import { authenticate } from '../../middleware/auth.middleware.js';
 
 const router = Router();
 const controller = new SearchController();
@@ -11,9 +12,9 @@ const controller = new SearchController();
  * @query   limit - Results per page (default: 20, max: 100)
  * @query   offset - Number of results to skip (default: 0)
  * @query   type - Search type: 'all', 'users', or 'posts' (default: 'all')
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/', controller.search);
+router.get('/', authenticate, controller.search);
 
 /**
  * @route   GET /api/search/users
@@ -21,9 +22,9 @@ router.get('/', controller.search);
  * @query   q - Search query (required)
  * @query   limit - Results per page (default: 20, max: 100)
  * @query   offset - Number of results to skip (default: 0)
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/users', controller.searchUsers);
+router.get('/users', authenticate, controller.searchUsers);
 
 /**
  * @route   GET /api/search/posts
@@ -31,8 +32,8 @@ router.get('/users', controller.searchUsers);
  * @query   q - Search query (required)
  * @query   limit - Results per page (default: 20, max: 100)
  * @query   offset - Number of results to skip (default: 0)
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/posts', controller.searchPosts);
+router.get('/posts', authenticate, controller.searchPosts);
 
 export default router;

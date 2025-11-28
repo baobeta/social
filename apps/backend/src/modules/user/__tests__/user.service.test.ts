@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UserService } from '../user.service.js';
 import { UserRepository } from '../user.repository.js';
 import type { User } from '../../../db/schema/index.js';
+import type { AuthUser } from '../../../lib/authorization.js';
 
 /**
  * Unit tests for UserService
@@ -17,10 +18,23 @@ describe('UserService - Unit Tests', () => {
     password: 'hashed_password',
     fullName: 'Test User',
     displayName: 'Tester',
+    initials: 'TU',
     role: 'user',
     searchVector: null,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+  };
+
+  const mockAuthUser: AuthUser = {
+    userId: '123e4567-e89b-12d3-a456-426614174000',
+    username: 'testuser',
+    role: 'user',
+  };
+
+  const mockAdminUser: AuthUser = {
+    userId: 'admin-id',
+    username: 'admin',
+    role: 'admin',
   };
 
   beforeEach(() => {
@@ -63,14 +77,14 @@ describe('UserService - Unit Tests', () => {
   });
 
   describe('updateProfile', () => {
-    it('should update full name only', async () => {
+    it('should update full name only (user updating own profile)', async () => {
       const updateData = { fullName: 'Updated Name' };
-      const updatedUser = { ...mockUser, ...updateData, updatedAt: new Date('2024-01-02') };
+      const updatedUser = { ...mockUser, ...updateData, initials: 'UN', updatedAt: new Date('2024-01-02') };
 
       mockRepository.findById.mockResolvedValue(mockUser);
       mockRepository.updateProfile.mockResolvedValue(updatedUser);
 
-      const result = await service.updateProfile(mockUser.id, updateData);
+      const result = await service.updateProfile(mockAuthUser, mockUser.id, updateData);
 
       expect(mockRepository.findById).toHaveBeenCalledWith(mockUser.id);
       expect(mockRepository.updateProfile).toHaveBeenCalledWith(mockUser.id, {
@@ -88,7 +102,7 @@ describe('UserService - Unit Tests', () => {
       mockRepository.findById.mockResolvedValue(mockUser);
       mockRepository.updateProfile.mockResolvedValue(updatedUser);
 
-      const result = await service.updateProfile(mockUser.id, updateData);
+      const result = await service.updateProfile(mockAuthUser, mockUser.id, updateData);
 
       expect(mockRepository.updateProfile).toHaveBeenCalledWith(mockUser.id, updateData);
       expect(result.user.displayName).toBe('New Display Name');
@@ -96,12 +110,12 @@ describe('UserService - Unit Tests', () => {
 
     it('should update both full name and display name', async () => {
       const updateData = { fullName: 'New Full Name', displayName: 'New Display' };
-      const updatedUser = { ...mockUser, ...updateData, updatedAt: new Date('2024-01-02') };
+      const updatedUser = { ...mockUser, ...updateData, initials: 'NN', updatedAt: new Date('2024-01-02') };
 
       mockRepository.findById.mockResolvedValue(mockUser);
       mockRepository.updateProfile.mockResolvedValue(updatedUser);
 
-      const result = await service.updateProfile(mockUser.id, updateData);
+      const result = await service.updateProfile(mockAuthUser, mockUser.id, updateData);
 
       expect(mockRepository.updateProfile).toHaveBeenCalledWith(mockUser.id, {
         fullName: 'New Full Name',
@@ -119,26 +133,38 @@ describe('UserService - Unit Tests', () => {
       mockRepository.findById.mockResolvedValue(mockUser);
       mockRepository.updateProfile.mockResolvedValue(updatedUser);
 
-      const result = await service.updateProfile(mockUser.id, updateData);
+      const result = await service.updateProfile(mockAuthUser, mockUser.id, updateData);
 
       expect(mockRepository.updateProfile).toHaveBeenCalledWith(mockUser.id, updateData);
       expect(result.user.displayName).toBeNull();
     });
 
-    it('should throw error if user not found', async () => {
+    it('should throw error if user not found (after permission check)', async () => {
+      // Admin trying to update non-existent user (permission passes, then user not found)
       mockRepository.findById.mockResolvedValue(undefined);
 
       await expect(
-        service.updateProfile('non-existent-id', { fullName: 'New Name' })
+        service.updateProfile(mockAdminUser, 'non-existent-id', { fullName: 'New Name' })
       ).rejects.toThrow('User not found');
 
       expect(mockRepository.updateProfile).not.toHaveBeenCalled();
     });
 
+    it('should throw permission error if regular user tries to update non-existent user', async () => {
+      // Permission check happens first, so permission error comes before "not found"
+      mockRepository.findById.mockResolvedValue(undefined);
+
+      await expect(
+        service.updateProfile(mockAuthUser, 'non-existent-id', { fullName: 'New Name' })
+      ).rejects.toThrow('You do not have permission to update this profile');
+
+      expect(mockRepository.findById).not.toHaveBeenCalled();
+    });
+
     it('should throw error if no fields to update', async () => {
       mockRepository.findById.mockResolvedValue(mockUser);
 
-      await expect(service.updateProfile(mockUser.id, {})).rejects.toThrow(
+      await expect(service.updateProfile(mockAuthUser, mockUser.id, {})).rejects.toThrow(
         'No fields to update'
       );
 
@@ -147,14 +173,40 @@ describe('UserService - Unit Tests', () => {
 
     it('should not expose password in response', async () => {
       const updateData = { fullName: 'Updated Name' };
-      const updatedUser = { ...mockUser, ...updateData };
+      const updatedUser = { ...mockUser, ...updateData, initials: 'UN' };
 
       mockRepository.findById.mockResolvedValue(mockUser);
       mockRepository.updateProfile.mockResolvedValue(updatedUser);
 
-      const result = await service.updateProfile(mockUser.id, updateData);
+      const result = await service.updateProfile(mockAuthUser, mockUser.id, updateData);
 
       expect(result.user).not.toHaveProperty('password');
+    });
+
+    it('should allow admin to update other user profile', async () => {
+      const otherUser = { ...mockUser, id: 'other-user-id' };
+      const updateData = { fullName: 'Admin Updated Name' };
+      const updatedUser = { ...otherUser, ...updateData, initials: 'AU' };
+
+      mockRepository.findById.mockResolvedValue(otherUser);
+      mockRepository.updateProfile.mockResolvedValue(updatedUser);
+
+      const result = await service.updateProfile(mockAdminUser, otherUser.id, updateData);
+
+      expect(result.user.fullName).toBe('Admin Updated Name');
+    });
+
+    it('should prevent non-admin from updating other user profile', async () => {
+      const otherUser = { ...mockUser, id: 'other-user-id' };
+      const updateData = { fullName: 'Hacked Name' };
+
+      mockRepository.findById.mockResolvedValue(otherUser);
+
+      await expect(
+        service.updateProfile(mockAuthUser, otherUser.id, updateData)
+      ).rejects.toThrow('You do not have permission to update this profile');
+
+      expect(mockRepository.updateProfile).not.toHaveBeenCalled();
     });
   });
 

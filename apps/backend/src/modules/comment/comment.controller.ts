@@ -318,7 +318,7 @@ export class CommentController {
       const { id } = paramsValidation.data;
       const data = bodyValidation.data;
 
-      const result = await this.service.updateComment(id, req.user.userId, data);
+      const result = await this.service.updateComment(id, req.user, data);
 
       logger.info({ commentId: id, userId: req.user.userId }, 'Comment updated');
 
@@ -342,6 +342,7 @@ export class CommentController {
         }
 
         if (
+          error.message === 'You do not have permission to edit this comment' ||
           error.message === 'You can only edit your own comments' ||
           error.message === 'Cannot update deleted comment'
         ) {
@@ -388,7 +389,7 @@ export class CommentController {
 
       const { id } = paramsValidation.data;
 
-      await this.service.deleteComment(id, req.user.userId);
+      await this.service.deleteComment(id, req.user);
 
       logger.info({ commentId: id, userId: req.user.userId }, 'Comment deleted');
 
@@ -412,6 +413,7 @@ export class CommentController {
         }
 
         if (
+          error.message === 'You do not have permission to delete this comment' ||
           error.message === 'You can only delete your own comments' ||
           error.message === 'Comment is already deleted'
         ) {

@@ -200,7 +200,7 @@ export class PostController {
       const { id } = paramsValidation.data;
       const data = bodyValidation.data;
 
-      const result = await this.service.updatePost(id, req.user.userId, data);
+      const result = await this.service.updatePost(id, req.user, data);
 
       logger.info({ postId: id, userId: req.user.userId }, 'Post updated');
 
@@ -221,6 +221,7 @@ export class PostController {
         }
 
         if (
+          error.message === 'You do not have permission to edit this post' ||
           error.message === 'You can only edit your own posts' ||
           error.message === 'Cannot update deleted post'
         ) {
@@ -267,7 +268,7 @@ export class PostController {
 
       const { id } = paramsValidation.data;
 
-      await this.service.deletePost(id, req.user.userId);
+      await this.service.deletePost(id, req.user);
 
       logger.info({ postId: id, userId: req.user.userId }, 'Post deleted');
 
@@ -288,6 +289,7 @@ export class PostController {
         }
 
         if (
+          error.message === 'You do not have permission to delete this post' ||
           error.message === 'You can only delete your own posts' ||
           error.message === 'Post is already deleted'
         ) {

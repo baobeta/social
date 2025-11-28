@@ -9,6 +9,7 @@ import type {
   GetRepliesResponse,
   CommentResponse,
 } from './comment.dto.js';
+import { AuthorizationService, type AuthUser } from '../../lib/authorization.js';
 
 /**
  * Service for comment business logic
@@ -226,15 +227,15 @@ export class CommentService {
 
   /**
    * Update a comment
-   * Only the author can update their comment
+   * Author can update their own comment, admin can update any comment
    * @param commentId - Comment ID
-   * @param userId - User ID (from authentication)
+   * @param user - Authenticated user (from authentication middleware)
    * @param data - Update data
    * @returns Updated comment
    */
   async updateComment(
     commentId: string,
-    userId: string,
+    user: AuthUser,
     data: UpdateCommentDto
   ): Promise<UpdateCommentResponse> {
     const existingComment = await this.repository.findById(commentId);
@@ -247,14 +248,13 @@ export class CommentService {
       throw new Error('Cannot update deleted comment');
     }
 
-    // Check authorization
-    const isAuthor = await this.repository.isAuthor(commentId, userId);
-    if (!isAuthor) {
-      throw new Error('You can only edit your own comments');
+    // Check permission: author or admin can edit
+    if (!AuthorizationService.canEditResource(user, existingComment.author.id)) {
+      throw new Error('You do not have permission to edit this comment');
     }
 
     // Update the comment
-    await this.repository.update(commentId, data.content, userId);
+    await this.repository.update(commentId, data.content, user.userId);
 
     // Fetch updated comment with author info
     const updatedComment = await this.repository.findById(commentId);
@@ -281,11 +281,11 @@ export class CommentService {
 
   /**
    * Delete a comment (soft delete)
-   * Only the author can delete their comment
+   * Author can delete their own comment, admin can delete any comment
    * @param commentId - Comment ID
-   * @param userId - User ID (from authentication)
+   * @param user - Authenticated user (from authentication middleware)
    */
-  async deleteComment(commentId: string, userId: string): Promise<void> {
+  async deleteComment(commentId: string, user: AuthUser): Promise<void> {
     const existingComment = await this.repository.findById(commentId);
 
     if (!existingComment) {
@@ -296,13 +296,12 @@ export class CommentService {
       throw new Error('Comment is already deleted');
     }
 
-    // Check authorization
-    const isAuthor = await this.repository.isAuthor(commentId, userId);
-    if (!isAuthor) {
-      throw new Error('You can only delete your own comments');
+    // Check permission: author or admin can delete
+    if (!AuthorizationService.canDeleteResource(user, existingComment.author.id)) {
+      throw new Error('You do not have permission to delete this comment');
     }
 
     // Soft delete the comment
-    await this.repository.softDelete(commentId, userId);
+    await this.repository.softDelete(commentId, user.userId);
   }
 }

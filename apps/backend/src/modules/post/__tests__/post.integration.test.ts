@@ -4,6 +4,7 @@ import { PostRepository } from '../post.repository.js';
 import { createTestUser, createTestPost } from '../../../test/fixtures.js';
 import { cleanDatabase } from '../../../test/setup.js';
 import { countQueries } from '../../../test/query-counter.js';
+import type { AuthUser } from '../../../lib/authorization.js';
 
 /**
  * Integration tests for PostService
@@ -184,11 +185,12 @@ describe('PostService - Integration Tests', () => {
   describe('Update Post', () => {
     it('should update post content', async () => {
       const user = await createTestUser();
+      const authUser: AuthUser = { userId: user.id, username: user.username, role: user.role };
       const post = await createTestPost(user.id, {
         content: 'Original content',
       });
 
-      const result = await service.updatePost(post.id, user.id, {
+      const result = await service.updatePost(post.id, authUser, {
         content: 'Updated content',
       });
 
@@ -200,20 +202,22 @@ describe('PostService - Integration Tests', () => {
     it('should only allow author to update their post', async () => {
       const author = await createTestUser({ username: 'author' });
       const otherUser = await createTestUser({ username: 'other' });
+      const otherAuthUser: AuthUser = { userId: otherUser.id, username: otherUser.username, role: otherUser.role };
 
       const post = await createTestPost(author.id, {
         content: 'Original post',
       });
 
       await expect(
-        service.updatePost(post.id, otherUser.id, {
+        service.updatePost(post.id, otherAuthUser, {
           content: 'Hacked content',
         })
-      ).rejects.toThrow('You can only edit your own posts');
+      ).rejects.toThrow('You do not have permission to edit this post');
     });
 
     it('should not allow updating deleted post', async () => {
       const user = await createTestUser();
+      const authUser: AuthUser = { userId: user.id, username: user.username, role: user.role };
       const post = await createTestPost(user.id, {
         content: 'Post content',
         isDeleted: true,
@@ -221,7 +225,7 @@ describe('PostService - Integration Tests', () => {
       });
 
       await expect(
-        service.updatePost(post.id, user.id, {
+        service.updatePost(post.id, authUser, {
           content: 'New content',
         })
       ).rejects.toThrow('Cannot update deleted post');
@@ -231,11 +235,12 @@ describe('PostService - Integration Tests', () => {
   describe('Delete Post', () => {
     it('should soft delete a post', async () => {
       const user = await createTestUser();
+      const authUser: AuthUser = { userId: user.id, username: user.username, role: user.role };
       const post = await createTestPost(user.id, {
         content: 'Post to delete',
       });
 
-      await service.deletePost(post.id, user.id);
+      await service.deletePost(post.id, authUser);
 
       // Post should not appear in timeline
       const timeline = await service.getTimeline(10, 0);
@@ -251,25 +256,27 @@ describe('PostService - Integration Tests', () => {
     it('should only allow author to delete their post', async () => {
       const author = await createTestUser({ username: 'author' });
       const otherUser = await createTestUser({ username: 'other' });
+      const otherAuthUser: AuthUser = { userId: otherUser.id, username: otherUser.username, role: otherUser.role };
 
       const post = await createTestPost(author.id, {
         content: 'Author post',
       });
 
-      await expect(service.deletePost(post.id, otherUser.id)).rejects.toThrow(
-        'You can only delete your own posts'
+      await expect(service.deletePost(post.id, otherAuthUser)).rejects.toThrow(
+        'You do not have permission to delete this post'
       );
     });
 
     it('should not allow deleting already deleted post', async () => {
       const user = await createTestUser();
+      const authUser: AuthUser = { userId: user.id, username: user.username, role: user.role };
       const post = await createTestPost(user.id, {
         content: 'Post',
         isDeleted: true,
         deletedAt: new Date(),
       });
 
-      await expect(service.deletePost(post.id, user.id)).rejects.toThrow(
+      await expect(service.deletePost(post.id, authUser)).rejects.toThrow(
         'Post is already deleted'
       );
     });
@@ -313,6 +320,7 @@ describe('PostService - Integration Tests', () => {
         username: 'lifecycleuser',
         fullName: 'Lifecycle User',
       });
+      const authUser: AuthUser = { userId: user.id, username: user.username, role: user.role };
 
       // 1. Create post
       const created = await service.createPost(user.id, {
@@ -327,7 +335,7 @@ describe('PostService - Integration Tests', () => {
       expect(fetched.post.id).toBe(created.post.id);
 
       // 3. Update post
-      const updated = await service.updatePost(created.post.id, user.id, {
+      const updated = await service.updatePost(created.post.id, authUser, {
         content: 'Updated post content',
       });
 
@@ -340,7 +348,7 @@ describe('PostService - Integration Tests', () => {
       expect(timeline1.posts.find((p) => p.id === created.post.id)).toBeDefined();
 
       // 5. Delete post
-      await service.deletePost(created.post.id, user.id);
+      await service.deletePost(created.post.id, authUser);
 
       // 6. Verify not in timeline
       const timeline2 = await service.getTimeline(10, 0);

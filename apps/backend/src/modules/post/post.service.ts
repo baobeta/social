@@ -8,6 +8,7 @@ import type {
   TimelineResponse,
   PostDetailResponse,
 } from './post.dto.js';
+import { AuthorizationService, type AuthUser } from '../../lib/authorization.js';
 
 /**
  * Service for post management
@@ -127,16 +128,16 @@ export class PostService {
 
   /**
    * Update a post
-   * Only the author can update their own post
+   * Author can update their own post, admin can update any post
    * @param postId - Post ID
-   * @param userId - User ID (from authentication)
+   * @param user - Authenticated user (from authentication middleware)
    * @param data - Update data (content)
    * @returns Updated post
-   * @throws Error if post not found, deleted, or user is not the author
+   * @throws Error if post not found, deleted, or user lacks permission
    */
   async updatePost(
     postId: string,
-    userId: string,
+    user: AuthUser,
     data: UpdatePostDto
   ): Promise<UpdatePostResponse> {
     // Check if post exists
@@ -150,15 +151,13 @@ export class PostService {
       throw new Error('Cannot update deleted post');
     }
 
-    // Check if user is the author
-    const isAuthor = await this.repository.isAuthor(postId, userId);
-
-    if (!isAuthor) {
-      throw new Error('You can only edit your own posts');
+    // Check permission: author or admin can edit
+    if (!AuthorizationService.canEditResource(user, existingPost.author.id)) {
+      throw new Error('You do not have permission to edit this post');
     }
 
     // Update the post
-    await this.repository.update(postId, data.content, userId);
+    await this.repository.update(postId, data.content, user.userId);
 
     // Fetch updated post with author information
     const updatedPost = await this.repository.findById(postId);
@@ -183,12 +182,12 @@ export class PostService {
 
   /**
    * Soft delete a post
-   * Only the author can delete their own post
+   * Author can delete their own post, admin can delete any post
    * @param postId - Post ID
-   * @param userId - User ID (from authentication)
-   * @throws Error if post not found, already deleted, or user is not the author
+   * @param user - Authenticated user (from authentication middleware)
+   * @throws Error if post not found, already deleted, or user lacks permission
    */
-  async deletePost(postId: string, userId: string): Promise<void> {
+  async deletePost(postId: string, user: AuthUser): Promise<void> {
     // Check if post exists
     const existingPost = await this.repository.findById(postId);
 
@@ -200,15 +199,13 @@ export class PostService {
       throw new Error('Post is already deleted');
     }
 
-    // Check if user is the author
-    const isAuthor = await this.repository.isAuthor(postId, userId);
-
-    if (!isAuthor) {
-      throw new Error('You can only delete your own posts');
+    // Check permission: author or admin can delete
+    if (!AuthorizationService.canDeleteResource(user, existingPost.author.id)) {
+      throw new Error('You do not have permission to delete this post');
     }
 
     // Soft delete the post
-    await this.repository.softDelete(postId, userId);
+    await this.repository.softDelete(postId, user.userId);
   }
 
   /**

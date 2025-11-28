@@ -9,6 +9,7 @@ import {
 } from '../../../test/fixtures.js';
 import { cleanDatabase } from '../../../test/setup.js';
 import { countQueries } from '../../../test/query-counter.js';
+import type { AuthUser } from '../../../lib/authorization.js';
 
 /**
  * Integration tests for CommentService
@@ -249,12 +250,13 @@ describe('CommentService - Integration Tests', () => {
   describe('Update Comment', () => {
     it('should update comment content', async () => {
       const user = await createTestUser();
+      const authUser: AuthUser = { userId: user.id, username: user.username, role: user.role };
       const post = await createTestPost(user.id);
       const comment = await createTestComment(post.id, user.id, {
         content: 'Original content',
       });
 
-      const result = await service.updateComment(comment.id, user.id, {
+      const result = await service.updateComment(comment.id, authUser, {
         content: 'Updated content',
       });
 
@@ -266,18 +268,20 @@ describe('CommentService - Integration Tests', () => {
     it('should only allow author to update their comment', async () => {
       const author = await createTestUser({ username: 'author' });
       const otherUser = await createTestUser({ username: 'other' });
+      const otherAuthUser: AuthUser = { userId: otherUser.id, username: otherUser.username, role: otherUser.role };
       const post = await createTestPost(author.id);
       const comment = await createTestComment(post.id, author.id);
 
       await expect(
-        service.updateComment(comment.id, otherUser.id, {
+        service.updateComment(comment.id, otherAuthUser, {
           content: 'Hacked content',
         })
-      ).rejects.toThrow('You can only edit your own comments');
+      ).rejects.toThrow('You do not have permission to edit this comment');
     });
 
     it('should not allow updating deleted comment', async () => {
       const user = await createTestUser();
+      const authUser: AuthUser = { userId: user.id, username: user.username, role: user.role };
       const post = await createTestPost(user.id);
       const comment = await createTestComment(post.id, user.id, {
         isDeleted: true,
@@ -285,7 +289,7 @@ describe('CommentService - Integration Tests', () => {
       });
 
       await expect(
-        service.updateComment(comment.id, user.id, {
+        service.updateComment(comment.id, authUser, {
           content: 'New content',
         })
       ).rejects.toThrow('Cannot update deleted comment');
@@ -295,10 +299,11 @@ describe('CommentService - Integration Tests', () => {
   describe('Delete Comment', () => {
     it('should soft delete a comment', async () => {
       const user = await createTestUser();
+      const authUser: AuthUser = { userId: user.id, username: user.username, role: user.role };
       const post = await createTestPost(user.id);
       const comment = await createTestComment(post.id, user.id);
 
-      await service.deleteComment(comment.id, user.id);
+      await service.deleteComment(comment.id, authUser);
 
       // Comment should not appear in list
       const result = await service.getCommentsByPostId(post.id, 10, 0);
@@ -313,23 +318,25 @@ describe('CommentService - Integration Tests', () => {
     it('should only allow author to delete their comment', async () => {
       const author = await createTestUser({ username: 'author' });
       const otherUser = await createTestUser({ username: 'other' });
+      const otherAuthUser: AuthUser = { userId: otherUser.id, username: otherUser.username, role: otherUser.role };
       const post = await createTestPost(author.id);
       const comment = await createTestComment(post.id, author.id);
 
-      await expect(service.deleteComment(comment.id, otherUser.id)).rejects.toThrow(
-        'You can only delete your own comments'
+      await expect(service.deleteComment(comment.id, otherAuthUser)).rejects.toThrow(
+        'You do not have permission to delete this comment'
       );
     });
 
     it('should not allow deleting already deleted comment', async () => {
       const user = await createTestUser();
+      const authUser: AuthUser = { userId: user.id, username: user.username, role: user.role };
       const post = await createTestPost(user.id);
       const comment = await createTestComment(post.id, user.id, {
         isDeleted: true,
         deletedAt: new Date(),
       });
 
-      await expect(service.deleteComment(comment.id, user.id)).rejects.toThrow(
+      await expect(service.deleteComment(comment.id, authUser)).rejects.toThrow(
         'Comment is already deleted'
       );
     });

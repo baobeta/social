@@ -8,9 +8,9 @@ const controller = new PostController();
 /**
  * @route   GET /api/posts
  * @desc    Get global timeline (all posts, sorted by date desc)
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/', controller.getTimeline);
+router.get('/', authenticate, controller.getTimeline);
 
 /**
  * @route   POST /api/posts
@@ -22,16 +22,16 @@ router.post('/', authenticate, controller.createPost);
 /**
  * @route   GET /api/posts/user/:id
  * @desc    Get posts by a specific user
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/user/:id', controller.getPostsByUser);
+router.get('/user/:id', authenticate, controller.getPostsByUser);
 
 /**
  * @route   GET /api/posts/:id
  * @desc    Get a single post by ID
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.get('/:id', controller.getPostById);
+router.get('/:id', authenticate, controller.getPostById);
 
 /**
  * @route   PATCH /api/posts/:id
