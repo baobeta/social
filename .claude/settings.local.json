@@ -18,7 +18,8 @@
       "Bash(timeout 3 npm run dev:*)",
       "Bash(npx tsx -v)",
       "Bash(npm run test:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []

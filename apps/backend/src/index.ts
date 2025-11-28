@@ -4,6 +4,8 @@ import cors from 'cors';
 import { config } from './lib/config.js';
 import { logger } from './lib/logger.js';
 import { errorHandler } from './middleware/error-handler.js';
+import authRoutes from './modules/auth/auth.routes.js';
+import userRoutes from './modules/user/user.routes.js';
 
 const app = express();
 
@@ -23,8 +25,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API routes will be added here
-// app.use('/api/v1', routes);
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
