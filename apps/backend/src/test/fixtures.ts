@@ -1,5 +1,5 @@
 import { db } from './setup.js';
-import { users, posts, type NewUser, type NewPost } from '../db/schema/index.js';
+import { users, posts, comments, type NewUser, type NewPost, type NewComment } from '../db/schema/index.js';
 import { hashPassword } from '../lib/password.js';
 
 /**
@@ -79,6 +79,58 @@ export async function createTestPosts(authorId: string, count: number) {
     })
   );
   return Promise.all(postPromises);
+}
+
+/**
+ * Create a test comment in the database
+ */
+export async function createTestComment(
+  postId: string,
+  authorId: string,
+  overrides?: Partial<NewComment>
+) {
+  const defaultComment: NewComment = {
+    content: `Test comment content ${Date.now()}`,
+    postId,
+    authorId,
+    parentCommentId: null,
+  };
+
+  const commentData = { ...defaultComment, ...overrides };
+
+  const [comment] = await db.insert(comments).values(commentData).returning();
+  return comment!;
+}
+
+/**
+ * Create multiple test comments for a post
+ */
+export async function createTestComments(
+  postId: string,
+  authorId: string,
+  count: number
+) {
+  const commentPromises = Array.from({ length: count }, (_, i) =>
+    createTestComment(postId, authorId, {
+      content: `Test comment ${i + 1} content`,
+    })
+  );
+  return Promise.all(commentPromises);
+}
+
+/**
+ * Create a test reply (comment with parentCommentId)
+ */
+export async function createTestReply(
+  postId: string,
+  authorId: string,
+  parentCommentId: string,
+  overrides?: Partial<NewComment>
+) {
+  return createTestComment(postId, authorId, {
+    ...overrides,
+    parentCommentId,
+  });
 }
 
 /**

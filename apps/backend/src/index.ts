@@ -8,6 +8,7 @@ import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/user/user.routes.js';
 import searchRoutes from './modules/search/search.routes.js';
 import postRoutes from './modules/post/post.routes.js';
+import commentRoutes from './modules/comment/comment.routes.js';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api', commentRoutes); // Comment routes include both /posts/:postId/comments and /comments/:id
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
