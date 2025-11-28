@@ -6,6 +6,7 @@ import { logger } from './lib/logger.js';
 import { errorHandler } from './middleware/error-handler.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/user/user.routes.js';
+import searchRoutes from './modules/search/search.routes.js';
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/search', searchRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

@@ -105,3 +105,5 @@ apps/backend/docs/USER-MODULE-SUMMARY.md
 .gitignore
 apps/backend/docs/API-USERS.md
 apps/backend/USER-PROFILE-QUICK-REF.md
+apps/backend/SEARCH-QUICK-REF.md
+apps/backend/docs/API-SEARCH.md

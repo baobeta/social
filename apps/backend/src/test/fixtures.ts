@@ -1,5 +1,5 @@
 import { db } from './setup.js';
-import { users, type NewUser } from '../db/schema/index.js';
+import { users, posts, type NewUser, type NewPost } from '../db/schema/index.js';
 import { hashPassword } from '../lib/password.js';
 
 /**
@@ -49,6 +49,36 @@ export async function createAdminUser(overrides?: Partial<NewUser>) {
     role: 'admin',
     ...overrides,
   });
+}
+
+/**
+ * Create a test post in the database
+ */
+export async function createTestPost(
+  authorId: string,
+  overrides?: Partial<NewPost>
+) {
+  const defaultPost: NewPost = {
+    content: `Test post content ${Date.now()}`,
+    authorId,
+  };
+
+  const postData = { ...defaultPost, ...overrides };
+
+  const [post] = await db.insert(posts).values(postData).returning();
+  return post!;
+}
+
+/**
+ * Create multiple test posts for a user
+ */
+export async function createTestPosts(authorId: string, count: number) {
+  const postPromises = Array.from({ length: count }, (_, i) =>
+    createTestPost(authorId, {
+      content: `Test post ${i + 1} content`,
+    })
+  );
+  return Promise.all(postPromises);
 }
 
 /**
