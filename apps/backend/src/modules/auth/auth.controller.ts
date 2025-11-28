@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { AuthService } from './auth.service.ts';
 import { registerSchema, loginSchema } from './auth.dto.ts';
 import { logger } from '../../lib/logger.ts';
+import { setAccessTokenCookie, setRefreshTokenCookie, clearAuthCookies } from '../../lib/cookie.ts';
 
 export class AuthController {
   private service: AuthService;
@@ -29,14 +30,21 @@ export class AuthController {
 
       const data = validationResult.data;
 
-      // Register user
-      const result = await this.service.register(data);
+      // Register user (pass req for IP and user agent tracking)
+      const result = await this.service.register(data, req);
 
       logger.info({ username: data.username }, 'User registered successfully');
 
+      // Set HttpOnly cookies for access and refresh tokens
+      setAccessTokenCookie(res, result.token);
+      setRefreshTokenCookie(res, result.refreshToken);
+
+      // Return user info (no tokens in response body for security)
       res.status(201).json({
         success: true,
-        data: result,
+        data: {
+          user: result.user,
+        },
       });
     } catch (error) {
       logger.error({ error }, 'Registration failed');
@@ -75,14 +83,21 @@ export class AuthController {
 
       const data = validationResult.data;
 
-      // Login user
-      const result = await this.service.login(data);
+      // Login user (pass req for IP and user agent tracking)
+      const result = await this.service.login(data, req);
 
       logger.info({ username: data.username }, 'User logged in successfully');
 
+      // Set HttpOnly cookies for access and refresh tokens
+      setAccessTokenCookie(res, result.token);
+      setRefreshTokenCookie(res, result.refreshToken);
+
+      // Return user info (no tokens in response body for security)
       res.status(200).json({
         success: true,
-        data: result,
+        data: {
+          user: result.user,
+        },
       });
     } catch (error) {
       logger.error({ error }, 'Login failed');
@@ -133,15 +148,73 @@ export class AuthController {
   };
 
   /**
-   * Logout (client-side only, just returns success)
+   * Refresh access token using refresh token
+   * POST /api/auth/refresh
+   */
+  refresh = async (req: Request, res: Response) => {
+    try {
+      // Get refresh token from cookie
+      const refreshToken = req.cookies.refresh_token;
+
+      if (!refreshToken) {
+        res.status(401).json({
+          success: false,
+          error: 'Refresh token not found',
+        });
+        return;
+      }
+
+      // Refresh access token
+      const result = await this.service.refreshAccessToken(refreshToken);
+
+      // Set new access token cookie
+      setAccessTokenCookie(res, result.token);
+
+      res.status(200).json({
+        success: true,
+        message: 'Access token refreshed successfully',
+      });
+    } catch (error) {
+      logger.error({ error }, 'Token refresh failed');
+
+      res.status(401).json({
+        success: false,
+        error: 'Invalid or expired refresh token',
+      });
+    }
+  };
+
+  /**
+   * Logout and revoke refresh token
    * POST /api/auth/logout
    */
-  logout = async (_req: Request, res: Response) => {
-    // With JWT, logout is handled client-side by removing the token
-    // This endpoint exists for consistency and future server-side logout logic
-    res.status(200).json({
-      success: true,
-      message: 'Logged out successfully',
-    });
+  logout = async (req: Request, res: Response) => {
+    try {
+      // Get refresh token from cookie
+      const refreshToken = req.cookies.refresh_token;
+
+      if (refreshToken) {
+        // Revoke refresh token in database
+        await this.service.logout(refreshToken);
+      }
+
+      // Clear all auth cookies
+      clearAuthCookies(res);
+
+      res.status(200).json({
+        success: true,
+        message: 'Logged out successfully',
+      });
+    } catch (error) {
+      logger.error({ error }, 'Logout failed');
+
+      // Still clear cookies even if revocation fails
+      clearAuthCookies(res);
+
+      res.status(200).json({
+        success: true,
+        message: 'Logged out successfully',
+      });
+    }
   };
 }

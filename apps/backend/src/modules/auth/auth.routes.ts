@@ -27,8 +27,15 @@ router.post('/login', controller.login);
 router.get('/me', authenticate, controller.me);
 
 /**
+ * @route   POST /api/auth/refresh
+ * @desc    Refresh access token using refresh token
+ * @access  Public (requires refresh token cookie)
+ */
+router.post('/refresh', controller.refresh);
+
+/**
  * @route   POST /api/auth/logout
- * @desc    Logout (client-side token removal)
+ * @desc    Logout and revoke refresh token
  * @access  Private
  */
 router.post('/logout', authenticate, controller.logout);

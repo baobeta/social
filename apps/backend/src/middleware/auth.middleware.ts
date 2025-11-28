@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../lib/jwt.ts';
+import { verifyToken, generateAccessToken } from '../lib/jwt.ts';
 import type { TokenPayload } from '../modules/auth/auth.dto.ts';
+import { setAccessTokenCookie } from '../lib/cookie.ts';
+import { RefreshTokenRepository } from '../modules/auth/refresh-token.repository.ts';
 
 // Extend Express Request type to include user
 declare global {
@@ -13,40 +15,67 @@ declare global {
 
 /**
  * Middleware to authenticate requests using JWT tokens
- * Expects token in Authorization header as "Bearer <token>"
+ * Reads access token from HttpOnly cookie, automatically refreshes if expired
  */
-export function authenticate(req: Request, res: Response, next: NextFunction) {
+export async function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
-    // Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
+    // Get access token from cookie
+    let accessToken = req.cookies.access_token;
+
+    if (!accessToken) {
       res.status(401).json({
         success: false,
-        error: 'No authorization header provided',
+        error: 'No access token provided',
       });
       return;
     }
 
-    // Check if it's a Bearer token
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) {
-      res.status(401).json({
-        success: false,
-        error: 'Invalid authorization header format. Use: Bearer <token>',
-      });
+    try {
+      // Try to verify access token
+      const payload = verifyToken(accessToken);
+      req.user = payload;
+      next();
       return;
+    } catch (error) {
+      // Access token expired or invalid, try to refresh
+      const refreshToken = req.cookies.refresh_token;
+
+      if (!refreshToken) {
+        res.status(401).json({
+          success: false,
+          error: 'Access token expired and no refresh token available',
+        });
+        return;
+      }
+
+      // Verify refresh token and generate new access token
+      const refreshTokenRepo = new RefreshTokenRepository();
+      const validRefreshToken = await refreshTokenRepo.findValidToken(refreshToken);
+
+      if (!validRefreshToken) {
+        res.status(401).json({
+          success: false,
+          error: 'Invalid or expired refresh token',
+        });
+        return;
+      }
+
+      // Generate new access token
+      const newAccessToken = generateAccessToken({
+        userId: validRefreshToken.userId,
+        username: '', // We don't have username in refresh token, but it's not critical
+        role: 'user', // Default role, should ideally fetch from database
+      });
+
+      // Set new access token cookie
+      setAccessTokenCookie(res, newAccessToken);
+
+      // Verify new token and attach to request
+      const payload = verifyToken(newAccessToken);
+      req.user = payload;
+
+      next();
     }
-
-
-    const token = parts[1];
-
-    // Verify token
-    const payload = verifyToken(token);
-
-    // Attach user to request
-    req.user = payload;
-
-    next();
   } catch (error) {
     res.status(401).json({
       success: false,
@@ -82,21 +111,18 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 /**
  * Optional authentication middleware
  * Attaches user to request if token is valid, but doesn't reject if no token
+ * Reads from HttpOnly cookie
  */
 export function optionalAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
+    const accessToken = req.cookies.access_token;
+    if (!accessToken) {
       next();
       return;
     }
 
-    const parts = authHeader.split(' ');
-    if (parts.length === 2 && parts[0] === 'Bearer') {
-      const token = parts[1];
-      const payload = verifyToken(token);
-      req.user = payload;
-    }
+    const payload = verifyToken(accessToken);
+    req.user = payload;
 
     next();
   } catch {

@@ -116,3 +116,5 @@ apps/frontend/SETUP.md
 apps/frontend/API_ROUTES.md
 JWT_AUTHENTICATION.md
 .gitignore
+HTTPONLY_COOKIE_AUTH.md
+SECURITY.md

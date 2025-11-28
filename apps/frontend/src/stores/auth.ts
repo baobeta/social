@@ -2,14 +2,14 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User, LoginCredentials, RegisterData } from '@/types/auth';
 import * as authService from '@/services/auth.ajax';
-import { setToken, removeToken, hasToken } from '@/lib/token';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  const isAuthenticated = computed(() => !!user.value && hasToken());
+  // With HttpOnly cookies, authentication is determined by whether we have a valid user
+  const isAuthenticated = computed(() => !!user.value);
   const isAdmin = computed(() => user.value?.role === 'admin');
 
   async function login(credentials: LoginCredentials): Promise<void> {
@@ -18,8 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authService.login(credentials);
       user.value = response.data.user;
-      // Store JWT token in localStorage
-      setToken(response.data.token);
+      // No need to store token - HttpOnly cookies are set automatically by the server
     } catch (err: any) {
       error.value = err.response?.data?.error || 'Login failed';
       throw err;
@@ -34,8 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authService.register(data);
       user.value = response.data.user;
-      // Store JWT token in localStorage
-      setToken(response.data.token);
+      // No need to store token - HttpOnly cookies are set automatically by the server
     } catch (err: any) {
       error.value = err.response?.data?.error || 'Registration failed';
       throw err;
@@ -53,29 +51,23 @@ export const useAuthStore = defineStore('auth', () => {
       // Continue logout even if API call fails
       console.error('Logout API call failed:', err);
     } finally {
-      // Clear local state and token
+      // Clear local state - cookies are cleared by the server
       user.value = null;
-      removeToken();
       loading.value = false;
     }
   }
 
   async function fetchCurrentUser(): Promise<void> {
-    // Only fetch if we have a token
-    if (!hasToken()) {
-      user.value = null;
-      return;
-    }
-
+    // With HttpOnly cookies, we can always try to fetch
+    // The browser will automatically send the cookie if it exists
     loading.value = true;
     error.value = null;
     try {
       const response = await authService.getCurrentUser();
       user.value = response.data.user;
     } catch {
-      // Token invalid or expired - clear everything
+      // No valid session or token expired
       user.value = null;
-      removeToken();
       error.value = null; // Don't show error if not authenticated
     } finally {
       loading.value = false;

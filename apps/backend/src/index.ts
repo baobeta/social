@@ -1,11 +1,11 @@
 import express from 'express';
-import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { config } from './lib/config.js';
 import { logger } from './lib/logger.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { securityHeaders, customSecurityHeaders, requestId } from './middleware/security.middleware.js';
-import { authRateLimit, apiRateLimit, contentCreationRateLimit } from './middleware/rate-limit.middleware.js';
+import { authRateLimit, apiRateLimit } from './middleware/rate-limit.middleware.js';
 import { sanitizeInput, preventNoSQLInjection } from './middleware/sanitize.middleware.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/user/user.routes.js';
@@ -22,10 +22,13 @@ app.use(requestId);
 app.use(securityHeaders());
 app.use(customSecurityHeaders);
 
-// CORS configuration with credentials support
+// Cookie parser - MUST be before routes that use cookies
+app.use(cookieParser());
+
+// CORS configuration with credentials support for HttpOnly cookies
 app.use(cors({
   origin: config.cors.origin,
-  credentials: true,
+  credentials: true, // IMPORTANT: Allow cookies to be sent
 }));
 
 // Body parsing middleware
@@ -37,7 +40,7 @@ app.use(preventNoSQLInjection); // Prevent NoSQL injection attacks
 app.use(sanitizeInput); // Sanitize all user input
 
 // Health check endpoint (no rate limit)
-app.get('/health', (req, res) => {
+app.get('/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 

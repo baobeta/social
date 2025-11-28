@@ -1,22 +1,29 @@
 import { hashPassword, comparePassword } from '../../lib/password.ts';
-import { generateToken } from '../../lib/jwt.ts';
+import { generateAccessToken, generateRefreshToken } from '../../lib/jwt.ts';
 import { generateInitials } from '../../lib/initials.js';
 import { validatePasswordStrength } from '../../lib/password-validator.js';
 import { AuthRepository } from './auth.repository.ts';
+import { RefreshTokenRepository } from './refresh-token.repository.ts';
 import type { RegisterDto, LoginDto, AuthResponse } from './auth.dto.ts';
+import type { Request } from 'express';
 
 export class AuthService {
   private repository: AuthRepository;
+  private refreshTokenRepository: RefreshTokenRepository;
 
-  constructor(repository: AuthRepository = new AuthRepository()) {
+  constructor(
+    repository: AuthRepository = new AuthRepository(),
+    refreshTokenRepository: RefreshTokenRepository = new RefreshTokenRepository()
+  ) {
     this.repository = repository;
+    this.refreshTokenRepository = refreshTokenRepository;
   }
 
   /**
    * Register a new user
    * @throws Error if username already exists or password is weak
    */
-  async register(data: RegisterDto): Promise<AuthResponse> {
+  async register(data: RegisterDto, req: Request): Promise<AuthResponse> {
     // Validate password strength
     const passwordValidation = validatePasswordStrength(data.password);
     if (!passwordValidation.valid) {
@@ -42,11 +49,26 @@ export class AuthService {
       role: 'user',
     });
 
-    // Generate JWT token
-    const token = generateToken({
+    // Generate access token (short-lived, 15 minutes)
+    const accessToken = generateAccessToken({
       userId: user.id,
       username: user.username,
       role: user.role,
+    });
+
+    // Generate refresh token (long-lived, 7 days)
+    const refreshToken = generateRefreshToken();
+
+    // Store refresh token in database
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+
+    await this.refreshTokenRepository.create({
+      token: refreshToken,
+      userId: user.id,
+      expiresAt,
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
     });
 
     return {
@@ -57,7 +79,8 @@ export class AuthService {
         displayName: user.displayName,
         role: user.role,
       },
-      token,
+      token: accessToken,
+      refreshToken,
     };
   }
 
@@ -65,7 +88,7 @@ export class AuthService {
    * Login a user
    * @throws Error if credentials are invalid
    */
-  async login(data: LoginDto): Promise<AuthResponse> {
+  async login(data: LoginDto, req: Request): Promise<AuthResponse> {
     // Find user by username
     const user = await this.repository.findByUsername(data.username);
     if (!user) {
@@ -78,11 +101,26 @@ export class AuthService {
       throw new Error('Invalid username or password');
     }
 
-    // Generate JWT token
-    const token = generateToken({
+    // Generate access token (short-lived, 15 minutes)
+    const accessToken = generateAccessToken({
       userId: user.id,
       username: user.username,
       role: user.role,
+    });
+
+    // Generate refresh token (long-lived, 7 days)
+    const refreshToken = generateRefreshToken();
+
+    // Store refresh token in database
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+
+    await this.refreshTokenRepository.create({
+      token: refreshToken,
+      userId: user.id,
+      expiresAt,
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
     });
 
     return {
@@ -93,8 +131,43 @@ export class AuthService {
         displayName: user.displayName,
         role: user.role,
       },
-      token,
+      token: accessToken,
+      refreshToken,
     };
+  }
+
+  /**
+   * Refresh access token using refresh token
+   * @throws Error if refresh token is invalid or expired
+   */
+  async refreshAccessToken(refreshTokenValue: string): Promise<{ token: string }> {
+    // Validate refresh token
+    const refreshToken = await this.refreshTokenRepository.findValidToken(refreshTokenValue);
+    if (!refreshToken) {
+      throw new Error('Invalid or expired refresh token');
+    }
+
+    // Get user
+    const user = await this.repository.findById(refreshToken.userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Generate new access token
+    const accessToken = generateAccessToken({
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+    });
+
+    return { token: accessToken };
+  }
+
+  /**
+   * Logout user by revoking refresh token
+   */
+  async logout(refreshTokenValue: string): Promise<void> {
+    await this.refreshTokenRepository.revokeToken(refreshTokenValue);
   }
 
   /**
