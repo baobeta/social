@@ -16,7 +16,8 @@
       "Bash(cat:*)",
       "Bash(npm run typecheck:*)",
       "Bash(timeout 3 npm run dev:*)",
-      "Bash(npx tsx -v)"
+      "Bash(npx tsx -v)",
+      "Bash(npm run test:*)"
     ],
     "deny": [],
     "ask": []

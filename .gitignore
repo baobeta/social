@@ -90,3 +90,5 @@ docs/*
 # **/*.spec.ts
 .claude/settings.local.json
 .claude/settings.local.json
+apps/backend/AUTHENTICATION_SUMMARY.md
+apps/backend/QUICK_START_AUTH.md
