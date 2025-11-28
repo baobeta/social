@@ -23,6 +23,7 @@ const runMigrations = async () => {
     await migrate(db, { migrationsFolder: './src/db/migrations' });
     logger.info('Migrations completed successfully');
   } catch (error) {
+    console.error('Full migration error:', error);
     logger.error('Migration failed:', error);
     process.exit(1);
   } finally {

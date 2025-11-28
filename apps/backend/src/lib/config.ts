@@ -1,15 +1,16 @@
 import { z } from 'zod';
+import dotenv from 'dotenv';
+
+// Load .env file if it exists (for development)
+dotenv.config();
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3000'),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string(),
-  REDIS_HOST: z.string().default('localhost'),
-  REDIS_PORT: z.string().default('6379'),
   JWT_SECRET: z.string(),
-  SESSION_SECRET: z.string(),
-  SESSION_MAX_AGE: z.string().default('86400000'),
+  JWT_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   RATE_LIMIT_WINDOW_MS: z.string().default('900000'),
   RATE_LIMIT_MAX_REQUESTS: z.string().default('100'),
@@ -36,14 +37,9 @@ export const config = {
   database: {
     url: env.DATABASE_URL,
   },
-  redis: {
-    host: env.REDIS_HOST,
-    port: parseInt(env.REDIS_PORT, 10),
-  },
   auth: {
     jwtSecret: env.JWT_SECRET,
-    sessionSecret: env.SESSION_SECRET,
-    sessionMaxAge: parseInt(env.SESSION_MAX_AGE, 10),
+    jwtExpiresIn: env.JWT_EXPIRES_IN,
   },
   cors: {
     origin: env.CORS_ORIGIN,

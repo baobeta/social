@@ -59,6 +59,10 @@ temp/
 *.sqlite3
 *.db
 
+# Drizzle ORM - keep migrations, ignore meta snapshots
+apps/backend/src/db/migrations/meta/
+**/drizzle/
+
 # Docker
 *.pid
 .dockerignore
@@ -76,5 +80,8 @@ temp/
 # Claude Code files
 CLAUDE.md
 AGENTS.md
-DEVELOPMENT.md
-PROJECT_STRUCTURE.md
+docs/*
+
+# Test files (optional - uncomment if you want to ignore)
+# **/*.test.ts
+# **/*.spec.ts
