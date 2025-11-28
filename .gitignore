@@ -107,3 +107,6 @@ apps/backend/docs/API-USERS.md
 apps/backend/USER-PROFILE-QUICK-REF.md
 apps/backend/SEARCH-QUICK-REF.md
 apps/backend/docs/API-SEARCH.md
+apps/backend/POST-API-QUICK-REF.md
+apps/backend/TESTING-N+1.md
+apps/backend/N+1-TESTING-SUMMARY.md
