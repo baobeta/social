@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Backend API for social media application",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "node build.mjs",
     "build:check": "tsc -p tsconfig.build.json --noEmit",
     "start": "node dist/index.js",
