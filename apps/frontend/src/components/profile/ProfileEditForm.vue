@@ -17,6 +17,7 @@
         </label>
         <InputText
           id="fullName"
+          data-ci="profile-fullname-input"
           :model-value="fullName"
           @update:model-value="emit('update:fullName', $event)"
           type="text"
@@ -40,12 +41,14 @@
 
       <div class="flex justify-end gap-3">
         <Button
+          data-ci="profile-cancel-button"
           label="Cancel"
           severity="secondary"
           @click="emit('cancel')"
           type="button"
         />
         <Button
+          data-ci="profile-save-button"
           type="submit"
           label="Save Changes"
           severity="primary"

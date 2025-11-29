@@ -3,6 +3,7 @@
     <IconField iconPosition="left" class="flex">
       <InputIcon class="pi pi-search" />
       <InputText
+        data-ci="search-input"
         :model-value="modelValue"
         @update:model-value="(value) => emit('update:modelValue', value as string)"
         type="text"

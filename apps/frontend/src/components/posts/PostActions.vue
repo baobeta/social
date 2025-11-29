@@ -1,42 +1,36 @@
 <template>
-  <div v-if="canEdit || canDelete" class="relative">
+  <div v-if="canEdit || canDelete" class="flex items-center gap-1">
     <Button
-      icon="pi pi-ellipsis-v"
+      v-if="canEdit"
+      data-ci="post-edit-button"
+      icon="pi pi-pencil"
       rounded
       text
-      severity="secondary"
       size="small"
-      @click="toggleMenu"
+      severity="secondary"
+      @click="handleEdit"
       :disabled="loading"
       class="hover:bg-gray-100"
-      aria-label="Post actions"
+      aria-label="Edit post"
     />
-    <div
-      v-if="menuVisible"
-      class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10"
-    >
-      <button
-        v-if="canEdit"
-        @click="handleEdit"
-        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-      >
-        <i class="pi pi-pencil text-xs"></i>
-        Edit
-      </button>
-      <button
-        v-if="canDelete"
-        @click="handleDelete"
-        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-      >
-        <i class="pi pi-trash text-xs"></i>
-        Delete
-      </button>
-    </div>
+    <Button
+      v-if="canDelete"
+      data-ci="post-delete-button"
+      icon="pi pi-trash"
+      rounded
+      text
+      size="small"
+      severity="danger"
+      @click="handleDelete"
+      :disabled="loading"
+      class="hover:bg-red-50"
+      aria-label="Delete post"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useConfirm } from 'primevue/useconfirm';
 import type { Post } from '@/types/post';
@@ -58,11 +52,9 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore();
 const confirm = useConfirm();
-const menuVisible = ref(false);
 
 const canEdit = computed(() => {
   if (!authStore.user) return false;
-  console.log(props.post)
   // Cannot edit deleted posts
   if (props.post.isDeleted) return false;
   return (
@@ -81,21 +73,11 @@ const canDelete = computed(() => {
   );
 });
 
-function toggleMenu() {
-  menuVisible.value = !menuVisible.value;
-}
-
-function closeMenu() {
-  menuVisible.value = false;
-}
-
 function handleEdit() {
   emit('edit', props.post);
-  closeMenu();
 }
 
 function handleDelete() {
-  closeMenu();
   confirm.require({
     message: 'Are you sure you want to delete this post?',
     header: 'Delete Confirmation',
@@ -107,20 +89,4 @@ function handleDelete() {
     }
   });
 }
-
-// Close menu when clicking outside
-function handleClickOutside(event: MouseEvent) {
-  const target = event.target as HTMLElement;
-  if (menuVisible.value && !target.closest('.relative')) {
-    closeMenu();
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
-});
 </script>

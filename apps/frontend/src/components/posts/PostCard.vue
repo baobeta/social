@@ -1,5 +1,6 @@
 <template>
   <div
+    data-ci="post-card"
     :class="[
       'bg-surface-card rounded-card border shadow-card hover:shadow-card-hover transition-shadow',
       post.isDeleted ? 'border-red-200 bg-red-50' : 'border-gray-100',

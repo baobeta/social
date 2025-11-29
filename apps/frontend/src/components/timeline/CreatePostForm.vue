@@ -2,6 +2,7 @@
   <div class="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200 p-6 mb-8 shadow-lg hover:shadow-xl transition-all">
     <form @submit.prevent="emit('submit')" class="flex flex-col gap-4">
       <Textarea
+        data-ci="post-create-textarea"
         :model-value="modelValue"
         @update:model-value="emit('update:modelValue', $event)"
         placeholder="What's on your mind?"
@@ -12,6 +13,7 @@
       />
       <div class="flex justify-end">
         <Button
+          data-ci="post-create-submit-button"
           type="submit"
           :disabled="!modelValue.trim() || loading"
           :loading="loading"

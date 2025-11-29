@@ -9,6 +9,7 @@
   >
     <div class="flex flex-col gap-4">
       <Textarea
+        data-ci="post-edit-textarea"
         :model-value="modelValue"
         @update:model-value="emit('update:modelValue', $event)"
         :autoResize="true"
@@ -25,6 +26,7 @@
         :disabled="loading"
       />
       <Button
+        data-ci="post-edit-save-button"
         label="Save"
         severity="primary"
         @click="emit('save')"

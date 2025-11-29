@@ -6,7 +6,7 @@
       <div class="flex items-center justify-between">
         <div class="flex-1">
           <div class="flex items-center gap-2">
-            <p class="text-sm font-semibold text-gray-900">
+            <p data-ci="post-author-name" class="text-sm font-semibold text-gray-900">
               {{ post.author.fullName }}
             </p>
             <span v-if="post.author.role === 'admin'" class="text-xs font-medium text-primary-600">
@@ -22,7 +22,7 @@
           <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
             <span>@{{ post.author.username }}</span>
             <span class="text-gray-300">•</span>
-            <span>{{ formatDate(post.createdAt) }}</span>
+            <span data-ci="post-timestamp">{{ formatDate(post.createdAt) }}</span>
             <span v-if="post.editedByAdmin" class="text-purple-600">
               • Edited by admin
             </span>

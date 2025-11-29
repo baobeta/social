@@ -1,5 +1,6 @@
 <template>
   <div
+    data-ci="comment-card"
     :class="[
       'flex gap-3 p-3 rounded-lg border',
       comment.isDeleted ? 'bg-red-50 border-red-200' : 'bg-surface border-gray-100',
@@ -11,7 +12,7 @@
       <div class="flex items-start justify-between">
         <div>
           <div class="flex items-center gap-2">
-            <p class="text-sm font-semibold text-gray-900">
+            <p data-ci="comment-author-name" class="text-sm font-semibold text-gray-900">
               {{ comment.author.fullName }}
             </p>
             <span v-if="comment.author.role === 'admin'" class="text-xs font-medium text-primary-600">
@@ -21,7 +22,7 @@
           <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
             <span>@{{ comment.author.username }}</span>
             <span class="text-gray-300">•</span>
-            <span>{{ formatDate(comment.createdAt) }}</span>
+            <span data-ci="comment-timestamp">{{ formatDate(comment.createdAt) }}</span>
             <span v-if="comment.updatedAt !== comment.createdAt && comment.editedByAdmin" class="text-purple-600">
               • Edited by admin
             </span>
@@ -35,6 +36,7 @@
           <div class="flex items-center gap-1">
             <Button
               v-if="canEdit"
+              data-ci="comment-edit-button"
               icon="pi pi-pencil"
               rounded
               text
@@ -47,6 +49,7 @@
             />
             <Button
               v-if="canDelete"
+              data-ci="comment-delete-button"
               icon="pi pi-trash"
               rounded
               text
@@ -73,6 +76,7 @@
       <!-- Edit mode -->
       <div v-if="isEditing" class="mt-3 flex flex-col gap-3">
         <Textarea
+          data-ci="comment-edit-textarea"
           v-model="editContent"
           :autoResize="true"
           rows="2"
@@ -89,6 +93,7 @@
             class="rounded-button"
           />
           <Button
+            data-ci="comment-edit-save-button"
             label="Save"
             size="small"
             class="bg-primary-500 hover:bg-primary-600 border-primary-500 hover:border-primary-600 rounded-button font-medium transition-colors"
@@ -103,6 +108,52 @@
       <p v-else class="mt-2 text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
         {{ comment.content }}
       </p>
+
+      <!-- Reply button and form -->
+      <div v-if="!isEditing" class="mt-2">
+        <Button
+          v-if="!showReplyForm"
+          data-ci="comment-reply-button"
+          label="Reply"
+          text
+          size="small"
+          icon="pi pi-reply"
+          class="text-gray-600 hover:text-primary-600"
+          @click="showReplyForm = true"
+        />
+
+        <!-- Reply form -->
+        <div v-if="showReplyForm" class="mt-3 flex flex-col gap-3 pl-4 border-l-2 border-gray-200">
+          <Textarea
+            data-ci="comment-reply-textarea"
+            v-model="replyContent"
+            placeholder="Write a reply..."
+            :autoResize="true"
+            rows="2"
+            class="w-full text-sm border-gray-200 focus:border-primary-400 focus:ring-primary-400 rounded-lg"
+            :disabled="replyLoading"
+          />
+          <div class="flex justify-end gap-2">
+            <Button
+              label="Cancel"
+              size="small"
+              severity="secondary"
+              @click="cancelReply"
+              :disabled="replyLoading"
+              class="rounded-button"
+            />
+            <Button
+              data-ci="comment-reply-submit-button"
+              label="Reply"
+              size="small"
+              class="bg-primary-500 hover:bg-primary-600 border-primary-500 hover:border-primary-600 rounded-button font-medium transition-colors"
+              @click="saveReply"
+              :disabled="!replyContent.trim() || replyLoading"
+              :loading="replyLoading"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -135,11 +186,14 @@ const isEditing = ref(false);
 const editContent = ref('');
 const editLoading = ref(false);
 const isDeleting = ref(false);
+const showReplyForm = ref(false);
+const replyContent = ref('');
+const replyLoading = ref(false);
 
 const canEdit = computed(() => {
   if (!authStore.user) return false;
   return (
-    authStore.user.id === props.comment.authorId ||
+    authStore.user.id === props.comment.author.id ||
     authStore.isAdmin
   );
 });
@@ -147,7 +201,7 @@ const canEdit = computed(() => {
 const canDelete = computed(() => {
   if (!authStore.user) return false;
   return (
-    authStore.user.id === props.comment.authorId ||
+    authStore.user.id === props.comment.author.id ||
     authStore.isAdmin
   );
 });
@@ -160,6 +214,32 @@ function startEdit() {
 function cancelEdit() {
   isEditing.value = false;
   editContent.value = '';
+}
+
+function cancelReply() {
+  showReplyForm.value = false;
+  replyContent.value = '';
+}
+
+async function saveReply() {
+  if (!replyContent.value.trim()) return;
+
+  replyLoading.value = true;
+  try {
+    const response = await commentsService.createComment({
+      postId: props.comment.postId,
+      content: replyContent.value,
+      parentId: props.comment.id,
+    });
+    showReplyForm.value = false;
+    replyContent.value = '';
+    emit('commentUpdated', response.data.comment);
+  } catch (error) {
+    console.error('Failed to create reply:', error);
+    alert('Failed to create reply. Please try again.');
+  } finally {
+    replyLoading.value = false;
+  }
 }
 
 async function saveEdit() {

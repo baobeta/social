@@ -9,7 +9,12 @@
     <RouterView v-else />
 
     <!-- Global ConfirmDialog for confirmation popups -->
-    <ConfirmDialog />
+    <ConfirmDialog
+      :pt="{
+        acceptButton: () => ({ 'data-ci': 'confirm-dialog-confirm-button' }),
+        rejectButton: () => ({ 'data-ci': 'confirm-dialog-cancel-button' })
+      }"
+    />
 
     <!-- Global Toast for notifications -->
     <Toast />

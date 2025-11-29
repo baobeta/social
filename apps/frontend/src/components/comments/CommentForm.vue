@@ -3,6 +3,7 @@
     <Avatar :full-name="authStore.user!.fullName" size="sm" />
     <div class="flex-1 flex flex-col gap-3">
       <Textarea
+        data-ci="comment-create-textarea"
         v-model="content"
         placeholder="Write a comment..."
         :autoResize="true"
@@ -12,6 +13,7 @@
       />
       <div class="flex justify-end">
         <Button
+          data-ci="comment-create-submit-button"
           type="submit"
           label="Comment"
           size="small"

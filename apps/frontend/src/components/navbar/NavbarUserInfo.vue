@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-3">
+  <router-link to="/profile" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
     <Avatar :full-name="fullName" size="md" />
     <div class="hidden sm:block">
       <p data-ci="user-display-name" class="text-sm font-medium text-gray-900">
@@ -12,7 +12,7 @@
         <span class="text-gray-600">@{{ username }}</span>
       </div>
     </div>
-  </div>
+  </router-link>
 </template>
 
 <script setup lang="ts">

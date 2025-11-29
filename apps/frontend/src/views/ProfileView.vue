@@ -61,7 +61,7 @@ async function handleUpdate() {
   successMessage.value = null;
 
   try {
-    await authStore.updateProfile(fullName.value);
+    await authStore.updateProfile({ fullName: fullName.value });
     successMessage.value = 'Profile updated successfully!';
     setTimeout(() => {
       successMessage.value = null;
