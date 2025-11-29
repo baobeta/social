@@ -66,6 +66,7 @@ export interface PostSearchResult {
   isDeleted: boolean;
   isEdited: boolean;
   createdAt: Date;
+  commentsCount: number;
   relevance: number; // Search relevance score
 }
 

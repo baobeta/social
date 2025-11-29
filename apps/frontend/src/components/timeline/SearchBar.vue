@@ -4,7 +4,7 @@
       <InputIcon class="pi pi-search" />
       <InputText
         :model-value="modelValue"
-        @update:model-value="emit('update:modelValue', $event)"
+        @update:model-value="(value) => emit('update:modelValue', value as string)"
         @input="emit('search')"
         type="text"
         placeholder="Search posts by text or username..."

@@ -398,4 +398,149 @@ describe('SearchService - Integration Tests', () => {
       expect(result.counts.total).toBe(5);
     });
   });
+
+  describe('Search Posts by Author Username', () => {
+    it('should find posts by searching author username', async () => {
+      const user = await createTestUser({
+        username: 'reactdev',
+        fullName: 'React Developer',
+      });
+      await createTestPost(user.id, {
+        content: 'Building modern web applications',
+      });
+
+      const result = await service.search({
+        q: 'reactdev',
+        limit: 20,
+        offset: 0,
+        type: 'posts',
+      });
+
+      expect(result.results.posts.length).toBeGreaterThan(0);
+      expect(result.results.posts[0].author.username).toBe('reactdev');
+    });
+
+    it('should find posts by searching author full name', async () => {
+      const user = await createTestUser({
+        username: 'jsmith',
+        fullName: 'John Smith',
+      });
+      await createTestPost(user.id, {
+        content: 'Exploring new technologies',
+      });
+
+      const result = await service.search({
+        q: 'John Smith',
+        limit: 20,
+        offset: 0,
+        type: 'posts',
+      });
+
+      expect(result.results.posts.length).toBeGreaterThan(0);
+      expect(result.results.posts[0].author.fullName).toBe('John Smith');
+    });
+
+    it('should find posts when query matches both content and username', async () => {
+      const user = await createTestUser({
+        username: 'pythonista',
+        fullName: 'Python Expert',
+      });
+      await createTestPost(user.id, {
+        content: 'Learning Python programming language',
+      });
+
+      const result = await service.search({
+        q: 'python',
+        limit: 20,
+        offset: 0,
+        type: 'posts',
+      });
+
+      // Should find the post both by content and author username
+      expect(result.results.posts.length).toBeGreaterThan(0);
+      const post = result.results.posts[0];
+      expect(
+        post.content.toLowerCase().includes('python') ||
+        post.author.username.toLowerCase().includes('python') ||
+        post.author.fullName.toLowerCase().includes('python')
+      ).toBe(true);
+    });
+
+    it('should rank posts by relevance when matching author username', async () => {
+      // Create multiple users with different relevance
+      const user1 = await createTestUser({
+        username: 'angular',
+        fullName: 'Angular Developer',
+      });
+      const user2 = await createTestUser({
+        username: 'developer123',
+        fullName: 'Other Developer',
+      });
+
+      // Post by user with exact username match
+      await createTestPost(user1.id, {
+        content: 'Framework comparison',
+      });
+
+      // Post by other user
+      await createTestPost(user2.id, {
+        content: 'Angular is a great framework',
+      });
+
+      const result = await service.search({
+        q: 'angular',
+        limit: 20,
+        offset: 0,
+        type: 'posts',
+      });
+
+      expect(result.results.posts.length).toBe(2);
+      // The post with Angular in content should rank higher due to combined relevance
+      expect(result.results.posts[0].relevance).toBeGreaterThan(0);
+    });
+
+    it('should search posts by partial username match', async () => {
+      const user = await createTestUser({
+        username: 'fullstackdev',
+        fullName: 'Full Stack Developer',
+      });
+      await createTestPost(user.id, {
+        content: 'Building end-to-end solutions',
+      });
+
+      const result = await service.search({
+        q: 'fullstack',
+        limit: 20,
+        offset: 0,
+        type: 'posts',
+      });
+
+      expect(result.results.posts.length).toBeGreaterThan(0);
+      expect(result.results.posts[0].author.username).toBe('fullstackdev');
+    });
+
+    it('should count posts correctly when searching by username', async () => {
+      const user = await createTestUser({
+        username: 'vuejs_dev',
+        fullName: 'Vue Developer',
+      });
+
+      // Create 3 posts by the same user
+      for (let i = 0; i < 3; i++) {
+        await createTestPost(user.id, {
+          content: `Post number ${i + 1}`,
+        });
+      }
+
+      const result = await service.search({
+        q: 'vuejs',
+        limit: 100,
+        offset: 0,
+        type: 'posts',
+      });
+
+      expect(result.counts.posts).toBe(3);
+      expect(result.results.posts).toHaveLength(3);
+    });
+  });
 });

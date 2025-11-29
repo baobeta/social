@@ -1,4 +1,5 @@
 import { SearchRepository } from './search.repository.js';
+import { CommentRepository } from '../comment/comment.repository.js';
 import type {
   SearchQueryDto,
   SearchResponse,
@@ -12,9 +13,14 @@ import type {
  */
 export class SearchService {
   private repository: SearchRepository;
+  private commentRepository: CommentRepository;
 
-  constructor(repository: SearchRepository = new SearchRepository()) {
+  constructor(
+    repository: SearchRepository = new SearchRepository(),
+    commentRepository: CommentRepository = new CommentRepository()
+  ) {
     this.repository = repository;
+    this.commentRepository = commentRepository;
   }
 
   /**
@@ -60,6 +66,10 @@ export class SearchService {
       relevance: user.relevance,
     }));
 
+    // Get comment counts for all posts (prevents N+1 query problem)
+    const postIds = postsResult.map((post) => post.id);
+    const commentCounts = await this.commentRepository.countByPostIds(postIds);
+
     // Transform posts to search result format
     const posts: PostSearchResult[] = postsResult.map((post) => ({
       id: post.id,
@@ -74,6 +84,7 @@ export class SearchService {
       isDeleted: post.isDeleted,
       isEdited: post.isEdited,
       createdAt: post.createdAt,
+      commentsCount: commentCounts.get(post.id) ?? 0,
       relevance: post.relevance,
     }));
 
@@ -141,6 +152,10 @@ export class SearchService {
 
     const posts = await this.repository.searchPosts(query, limit, offset);
 
+    // Get comment counts for all posts (prevents N+1 query problem)
+    const postIds = posts.map((post) => post.id);
+    const commentCounts = await this.commentRepository.countByPostIds(postIds);
+
     return posts.map((post) => ({
       id: post.id,
       content: post.content,
@@ -154,6 +169,7 @@ export class SearchService {
       isDeleted: post.isDeleted,
       isEdited: post.isEdited,
       createdAt: post.createdAt,
+      commentsCount: commentCounts.get(post.id) ?? 0,
       relevance: post.relevance,
     }));
   }

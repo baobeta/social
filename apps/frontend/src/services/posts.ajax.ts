@@ -32,6 +32,6 @@ export async function deletePost(id: string): Promise<void> {
 }
 
 export async function searchPosts(query: string): Promise<PostsResponse> {
-  const response = await apiClient.get('/search', { params: { q: query } });
+  const response = await apiClient.get('/search/posts', { params: { q: query } });
   return response.data;
 }

@@ -1,4 +1,4 @@
-import { sql, eq, and, desc } from 'drizzle-orm';
+import { sql, eq, and, or, desc } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { users, posts, type User, type Post } from '../../db/schema/index.js';
 
@@ -56,7 +56,7 @@ export class SearchRepository {
   }
 
   /**
-   * Search posts by content using full-text search
+   * Search posts by content or author username using full-text search
    * @param query - Search query string
    * @param limit - Maximum number of results
    * @param offset - Number of results to skip
@@ -80,6 +80,7 @@ export class SearchRepository {
     >
   > {
     // Convert search query to tsquery format
+    // Replace spaces with '&' for AND search, add ':*' for prefix matching
     const tsQuery = query
       .trim()
       .split(/\s+/)
@@ -101,8 +102,11 @@ export class SearchRepository {
         searchVector: posts.searchVector,
         createdAt: posts.createdAt,
         updatedAt: posts.updatedAt,
-        // Relevance score
-        relevance: sql<number>`ts_rank(${posts.searchVector}, to_tsquery('english', ${tsQuery}))`,
+        // Combined relevance score from post content and author username
+        relevance: sql<number>`
+          ts_rank(${posts.searchVector}, to_tsquery('english', ${tsQuery})) +
+          ts_rank(${users.searchVector}, to_tsquery('english', ${tsQuery})) * 0.5
+        `,
         // Author fields
         author: {
           id: users.id,
@@ -115,12 +119,20 @@ export class SearchRepository {
       .innerJoin(users, eq(posts.authorId, users.id))
       .where(
         and(
-          sql`${posts.searchVector} @@ to_tsquery('english', ${tsQuery})`,
+          // Search in either post content OR author username/fullname
+          or(
+            sql`${posts.searchVector} @@ to_tsquery('english', ${tsQuery})`,
+            sql`${users.searchVector} @@ to_tsquery('english', ${tsQuery})`
+          ),
           eq(posts.isDeleted, false) // Exclude soft-deleted posts
         )
       )
       .orderBy(
-        desc(sql`ts_rank(${posts.searchVector}, to_tsquery('english', ${tsQuery}))`),
+        // Order by combined relevance score
+        desc(sql`
+          ts_rank(${posts.searchVector}, to_tsquery('english', ${tsQuery})) +
+          ts_rank(${users.searchVector}, to_tsquery('english', ${tsQuery})) * 0.5
+        `),
         desc(posts.createdAt)
       )
       .limit(limit)
@@ -154,7 +166,7 @@ export class SearchRepository {
   }
 
   /**
-   * Count total number of posts matching search query
+   * Count total number of posts matching search query (by content or author username)
    * @param query - Search query string
    * @returns Count of matching posts
    */
@@ -170,9 +182,14 @@ export class SearchRepository {
         count: sql<number>`count(*)::int`,
       })
       .from(posts)
+      .innerJoin(users, eq(posts.authorId, users.id))
       .where(
         and(
-          sql`${posts.searchVector} @@ to_tsquery('english', ${tsQuery})`,
+          // Search in either post content OR author username/fullname
+          or(
+            sql`${posts.searchVector} @@ to_tsquery('english', ${tsQuery})`,
+            sql`${users.searchVector} @@ to_tsquery('english', ${tsQuery})`
+          ),
           eq(posts.isDeleted, false)
         )
       );
