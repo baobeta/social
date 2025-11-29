@@ -8,6 +8,19 @@
         @search="handleSearch"
       />
 
+      <!-- Admin toggle to show/hide deleted posts -->
+      <div v-if="authStore.isAdmin" class="mb-4 flex items-center gap-2 p-4 bg-white rounded-lg shadow">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            v-model="showDeletedPosts"
+            @change="handleToggleDeletedPosts"
+            class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+          />
+          <span class="text-sm font-medium text-gray-700">Show deleted posts</span>
+        </label>
+      </div>
+
       <CreatePostForm
         v-model="newPostContent"
         :loading="createLoading"
@@ -87,15 +100,14 @@ const isEditDialogVisible = ref(false);
 const editContent = ref('');
 const editLoading = ref(false);
 const deletingPostId = ref<string | null>(null);
+const showDeletedPosts = ref(false);
 
 // Pagination state
 const pagination = ref<PaginationMeta | null>(null);
 const loadingMore = ref(false);
 
 const displayPosts = computed(() => {
-  if (!authStore.isAdmin) {
-    return posts.value.filter((post) => !post.isDeleted);
-  }
+  // No client-side filtering - backend handles this now
   return posts.value;
 });
 
@@ -117,7 +129,11 @@ async function loadPosts(append: boolean = false) {
 
   try {
     const offset = append && pagination.value ? pagination.value.offset + pagination.value.limit : 0;
-    const response = await postsService.getPosts({ limit: 20, offset });
+    const response = await postsService.getPosts({
+      limit: 20,
+      offset,
+      includeDeleted: authStore.isAdmin ? showDeletedPosts.value : false
+    });
 
     if (append) {
       posts.value = [...posts.value, ...response.data.posts];
@@ -134,6 +150,11 @@ async function loadPosts(append: boolean = false) {
     loading.value = false;
     loadingMore.value = false;
   }
+}
+
+async function handleToggleDeletedPosts() {
+  // Reload posts when toggle changes
+  await loadPosts(false);
 }
 
 // Handle comment section toggle - load comments only when expanded

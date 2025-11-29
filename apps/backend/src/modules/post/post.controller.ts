@@ -22,7 +22,7 @@ export class PostController {
   /**
    * Get global timeline (all posts)
    * GET /api/posts
-   * @access Public
+   * @access Private (includeDeleted requires admin role)
    */
   getTimeline = async (req: Request, res: Response) => {
     try {
@@ -37,12 +37,15 @@ export class PostController {
         return;
       }
 
-      const { limit, offset } = validationResult.data;
+      const { limit, offset, includeDeleted } = validationResult.data;
 
-      const result = await this.service.getTimeline(limit, offset);
+      // Only admins can request deleted posts
+      const canIncludeDeleted = includeDeleted && req.user?.role === 'admin';
+
+      const result = await this.service.getTimeline(limit, offset, canIncludeDeleted);
 
       logger.info(
-        { postCount: result.posts.length, limit, offset },
+        { postCount: result.posts.length, limit, offset, includeDeleted: canIncludeDeleted },
         'Timeline retrieved'
       );
 
@@ -63,7 +66,7 @@ export class PostController {
   /**
    * Get a single post by ID
    * GET /api/posts/:id
-   * @access Public
+   * @access Private
    */
   getPostById = async (req: Request, res: Response) => {
     try {

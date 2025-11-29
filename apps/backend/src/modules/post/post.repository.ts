@@ -80,14 +80,16 @@ export class PostRepository {
   /**
    * Get all posts for timeline (global feed)
    * Sorted by creation date (newest first)
-   * Excludes soft-deleted posts
+   * Excludes soft-deleted posts by default
    * @param limit - Maximum number of posts to return
    * @param offset - Number of posts to skip
+   * @param includeDeleted - Whether to include deleted posts (admin only)
    * @returns Array of posts with author information
    */
   async getTimeline(
     limit: number,
-    offset: number
+    offset: number,
+    includeDeleted: boolean = false
   ): Promise<
     Array<
       Post & {
@@ -101,7 +103,7 @@ export class PostRepository {
       }
     >
   > {
-    return await this.db
+    const query = this.db
       .select({
         // Post fields
         id: posts.id,
@@ -126,8 +128,14 @@ export class PostRepository {
         },
       })
       .from(posts)
-      .innerJoin(users, eq(posts.authorId, users.id))
-      .where(eq(posts.isDeleted, false))
+      .innerJoin(users, eq(posts.authorId, users.id));
+
+    // Only filter out deleted posts if includeDeleted is false
+    if (!includeDeleted) {
+      query.where(eq(posts.isDeleted, false));
+    }
+
+    return await query
       .orderBy(desc(posts.createdAt))
       .limit(limit)
       .offset(offset);

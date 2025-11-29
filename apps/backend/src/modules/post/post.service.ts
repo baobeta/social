@@ -106,18 +106,20 @@ export class PostService {
   /**
    * Get global timeline (all posts from all users)
    * Sorted by date descending (newest first)
-   * Excludes soft-deleted posts
+   * Excludes soft-deleted posts by default
    * @param limit - Maximum number of posts (default: 20, max: 100)
    * @param offset - Number of posts to skip (default: 0)
+   * @param includeDeleted - Whether to include deleted posts (default: false)
    * @returns Timeline with posts and pagination info
    */
-  async getTimeline(limit: number = 20, offset: number = 0): Promise<TimelineResponse> {
+  async getTimeline(limit: number = 20, offset: number = 0, includeDeleted: boolean = false): Promise<TimelineResponse> {
     // Validate and cap limits
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const safeOffset = Math.max(offset, 0);
 
     // Try to get from cache first (cache-aside pattern)
-    const cacheKey = this.getTimelineCacheKey(safeLimit, safeOffset);
+    // Note: We include includeDeleted in cache key to separate cached results
+    const cacheKey = `${this.getTimelineCacheKey(safeLimit, safeOffset)}:${includeDeleted}`;
     const cachedTimeline = await cacheService.get<TimelineResponse>(cacheKey);
 
     if (cachedTimeline) {
@@ -126,7 +128,7 @@ export class PostService {
 
     // Cache miss - fetch from database
     const [postsData, total] = await Promise.all([
-      this.repository.getTimeline(safeLimit, safeOffset),
+      this.repository.getTimeline(safeLimit, safeOffset, includeDeleted),
       this.repository.countTimeline(),
     ]);
 

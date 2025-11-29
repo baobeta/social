@@ -51,6 +51,12 @@ export const timelineQuerySchema = z.object({
     .refine((val) => val >= 0, {
       message: 'Offset must be 0 or greater',
     }),
+  includeDeleted: z
+    .string()
+    .optional()
+    .transform((val) => val === 'true')
+    .default('false')
+    .transform((val) => val === 'true'),
 });
 
 // ============================================================================

@@ -7,7 +7,7 @@ import type {
 } from '@/types/post';
 import type { SearchParams } from '@/types/api';
 
-export async function getPosts(params?: SearchParams): Promise<PostsResponse> {
+export async function getPosts(params?: SearchParams & { includeDeleted?: boolean }): Promise<PostsResponse> {
   const response = await apiClient.get('/posts', { params });
   return response.data;
 }
