@@ -126,6 +126,19 @@
           </div>
         </div>
       </div>
+
+      <!-- Load more button -->
+      <div v-if="hasMoreComments" class="flex justify-center py-2">
+        <Button
+          label="Load more comments"
+          size="small"
+          text
+          icon="pi pi-chevron-down"
+          @click="loadMoreComments"
+          :loading="loadingMore"
+          :disabled="loadingMore"
+        />
+      </div>
     </div>
 
     <p v-else class="text-sm text-gray-500 text-center py-4">
@@ -138,7 +151,7 @@
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useConfirm } from 'primevue/useconfirm';
-import type { Comment } from '@/types/post';
+import type { Comment, PaginationMeta } from '@/types/post';
 import * as commentsService from '@/services/comments.ajax';
 import Avatar from './Avatar.vue';
 import Textarea from 'primevue/textarea';
@@ -148,12 +161,16 @@ import Tag from 'primevue/tag';
 interface Props {
   postId: string;
   comments: Comment[];
+  pagination?: PaginationMeta | null;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  refresh: [];
+  commentCreated: [comment: Comment];
+  commentUpdated: [comment: Comment];
+  commentDeleted: [commentId: string];
+  loadMore: [];
 }>();
 
 const authStore = useAuthStore();
@@ -164,11 +181,18 @@ const editingId = ref<string | null>(null);
 const editContent = ref('');
 const editLoading = ref(false);
 const deletingIds = ref(new Set<string>());
+const loadingMore = ref(false);
 
 const localComments = computed(() => {
   return props.comments.sort((a, b) => {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+});
+
+const hasMoreComments = computed(() => {
+  if (!props.pagination) return false;
+  const currentCount = props.pagination.offset + props.pagination.limit;
+  return currentCount < props.pagination.total;
 });
 
 function canEdit(comment: Comment): boolean {
@@ -192,12 +216,12 @@ async function handleSubmit() {
 
   loading.value = true;
   try {
-    await commentsService.createComment({
+    const response = await commentsService.createComment({
       postId: props.postId,
       content: newComment.value,
     });
     newComment.value = '';
-    emit('refresh');
+    emit('commentCreated', response.data.comment);
   } catch (error) {
     console.error('Failed to create comment:', error);
     alert('Failed to create comment. Please try again.');
@@ -221,12 +245,12 @@ async function saveEdit(commentId: string) {
 
   editLoading.value = true;
   try {
-    await commentsService.updateComment(commentId, {
+    const response = await commentsService.updateComment(commentId, {
       content: editContent.value,
     });
     editingId.value = null;
     editContent.value = '';
-    emit('refresh');
+    emit('commentUpdated', response.data.comment);
   } catch (error) {
     console.error('Failed to update comment:', error);
     alert('Failed to update comment. Please try again.');
@@ -246,7 +270,7 @@ async function handleDelete(commentId: string) {
       deletingIds.value.add(commentId);
       try {
         await commentsService.deleteComment(commentId);
-        emit('refresh');
+        emit('commentDeleted', commentId);
       } catch (error) {
         console.error('Failed to delete comment:', error);
         alert('Failed to delete comment. Please try again.');
@@ -255,6 +279,16 @@ async function handleDelete(commentId: string) {
       }
     }
   });
+}
+
+function loadMoreComments() {
+  loadingMore.value = true;
+  emit('loadMore');
+  // The parent will handle the actual loading
+  // Reset the loading state after a short delay to allow parent to update
+  setTimeout(() => {
+    loadingMore.value = false;
+  }, 100);
 }
 
 function formatDate(dateString: string): string {

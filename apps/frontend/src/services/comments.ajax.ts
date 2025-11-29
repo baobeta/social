@@ -6,8 +6,23 @@ import type {
   UpdateCommentData,
 } from '@/types/post';
 
-export async function getComments(postId: string): Promise<CommentsResponse> {
-  const response = await apiClient.get(`/posts/${postId}/comments`);
+export interface GetCommentsOptions {
+  limit?: number;
+  offset?: number;
+}
+
+export async function getComments(
+  postId: string,
+  options?: GetCommentsOptions
+): Promise<CommentsResponse> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.append('limit', String(options.limit));
+  if (options?.offset) params.append('offset', String(options.offset));
+
+  const queryString = params.toString();
+  const url = `/posts/${postId}/comments${queryString ? `?${queryString}` : ''}`;
+
+  const response = await apiClient.get(url);
   return response.data;
 }
 

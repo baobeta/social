@@ -105,6 +105,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   edit: [post: Post];
   delete: [post: Post];
+  toggleComments: [postId: string, expanded: boolean];
 }>();
 
 const authStore = useAuthStore();
@@ -129,6 +130,7 @@ const canDelete = computed(() => {
 
 function toggleComments() {
   commentsExpanded.value = !commentsExpanded.value;
+  emit('toggleComments', props.post.id, commentsExpanded.value);
 }
 
 function handleDelete() {

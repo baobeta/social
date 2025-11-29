@@ -58,6 +58,25 @@
           </div>
 
           <div class="flex flex-col gap-2">
+            <label for="confirmPassword" class="font-medium text-gray-700">
+              Confirm Password
+            </label>
+            <Password
+              id="confirmPassword"
+              v-model="confirmPassword"
+              required
+              placeholder="Re-enter your password"
+              :feedback="false"
+              toggleMask
+              class="w-full"
+              inputClass="w-full"
+            />
+            <Message v-if="confirmPassword && confirmPassword !== formData.password" severity="error" :closable="false">
+              Passwords do not match
+            </Message>
+          </div>
+
+          <div class="flex flex-col gap-2">
             <label for="role" class="font-medium text-gray-700">
               Role
             </label>
@@ -120,12 +139,20 @@ const formData = ref<RegisterData>({
   role: UserRole.USER,
 });
 
+const confirmPassword = ref('');
+
 const roleOptions = [
   { label: 'User', value: 'user' },
   { label: 'Admin', value: 'admin' },
 ];
 
 async function handleRegister() {
+  // Validate password confirmation
+  if (formData.value.password !== confirmPassword.value) {
+    authStore.error = 'Passwords do not match';
+    return;
+  }
+
   try {
     await authStore.register(formData.value);
     router.push('/timeline');

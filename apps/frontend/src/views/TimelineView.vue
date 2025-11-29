@@ -52,7 +52,7 @@
           {{ error }}
         </Message>
         <Button
-          @click="loadPosts"
+          @click="() => loadPosts(false)"
           label="Try again"
           size="small"
           severity="danger"
@@ -70,15 +70,27 @@
           :loading="editingPostId === post.id || deletingPostId === post.id"
           @edit="startEditPost"
           @delete="handleDeletePost"
+          @toggle-comments="handleToggleComments"
         >
           <template #comments>
             <CommentSection
               :post-id="post.id"
               :comments="postComments[post.id] || []"
-              @refresh="() => loadComments(post.id)"
+              :pagination="commentsPagination[post.id] || null"
+              @comment-created="(comment) => handleCommentCreated(post.id, comment)"
+              @comment-updated="(comment) => handleCommentUpdated(post.id, comment)"
+              @comment-deleted="(commentId) => handleCommentDeleted(post.id, commentId)"
+              @load-more="() => loadComments(post.id, true)"
             />
           </template>
         </PostCard>
+
+        <!-- Infinite Scroll Trigger -->
+        <div ref="loadMoreTrigger" class="py-4 flex justify-center">
+          <ProgressSpinner v-if="loadingMore" style="width: 40px; height: 40px" />
+          <p v-else-if="hasMorePosts" class="text-gray-400 text-sm">Scroll for more posts...</p>
+          <p v-else class="text-gray-400 text-sm">You've reached the end</p>
+        </div>
       </div>
 
       <!-- Empty State -->
@@ -139,9 +151,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import type { Post, Comment } from '@/types/post';
+import type { Post, Comment, PaginationMeta } from '@/types/post';
 import * as postsService from '@/services/posts.ajax';
 import * as commentsService from '@/services/comments.ajax';
 import Navbar from '@/components/Navbar.vue';
@@ -160,6 +172,7 @@ const authStore = useAuthStore();
 
 const posts = ref<Post[]>([]);
 const postComments = ref<Record<string, Comment[]>>({});
+const commentsPagination = ref<Record<string, PaginationMeta>>({});
 const loading = ref(false);
 const error = ref<string | null>(null);
 const searchQuery = ref('');
@@ -171,6 +184,12 @@ const editContent = ref('');
 const editLoading = ref(false);
 const deletingPostId = ref<string | null>(null);
 
+// Pagination state
+const pagination = ref<PaginationMeta | null>(null);
+const loadingMore = ref(false);
+const loadMoreTrigger = ref<HTMLElement | null>(null);
+let intersectionObserver: IntersectionObserver | null = null;
+
 const displayPosts = computed(() => {
   if (!authStore.isAdmin) {
     return posts.value.filter((post) => !post.isDeleted);
@@ -178,28 +197,117 @@ const displayPosts = computed(() => {
   return posts.value;
 });
 
-async function loadPosts() {
-  loading.value = true;
-  error.value = null;
-  try {
-    const response = await postsService.getPosts();
-    posts.value = response.data.posts;
+const hasMorePosts = computed(() => {
+  if (!pagination.value) return false;
+  const currentCount = pagination.value.offset + pagination.value.limit;
+  return currentCount < pagination.value.total;
+});
 
-    // Load comments for each post
-    for (const post of posts.value) {
-      await loadComments(post.id);
+async function loadPosts(append: boolean = false) {
+  if (append) {
+    loadingMore.value = true;
+  } else {
+    loading.value = true;
+    posts.value = [];
+  }
+
+  error.value = null;
+
+  try {
+    const offset = append && pagination.value ? pagination.value.offset + pagination.value.limit : 0;
+    const response = await postsService.getPosts({ limit: 20, offset });
+
+    if (append) {
+      posts.value = [...posts.value, ...response.data.posts];
+    } else {
+      posts.value = response.data.posts;
     }
+
+    pagination.value = response.data.pagination || null;
+
+    // Don't load comments automatically - they will be loaded when user expands comments
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to load posts';
   } finally {
     loading.value = false;
+    loadingMore.value = false;
   }
 }
 
-async function loadComments(postId: string) {
+// Handle comment section toggle - load comments only when expanded
+async function handleToggleComments(postId: string, expanded: boolean) {
+  if (expanded && !postComments.value[postId]) {
+    // Load comments only if they haven't been loaded yet
+    await loadComments(postId, false);
+  }
+}
+
+// Handle comment created - add to list without refetching
+function handleCommentCreated(postId: string, comment: Comment) {
+  if (!postComments.value[postId]) {
+    postComments.value[postId] = [];
+  }
+  // Add new comment at the beginning (newest first)
+  postComments.value[postId] = [comment, ...postComments.value[postId]];
+
+  // Update pagination total count
+  if (commentsPagination.value[postId]) {
+    commentsPagination.value[postId] = {
+      ...commentsPagination.value[postId],
+      total: commentsPagination.value[postId].total + 1,
+    };
+  }
+}
+
+// Handle comment updated - update in-place
+function handleCommentUpdated(postId: string, updatedComment: Comment) {
+  if (postComments.value[postId]) {
+    const index = postComments.value[postId].findIndex(c => c.id === updatedComment.id);
+    if (index !== -1) {
+      postComments.value[postId][index] = updatedComment;
+    }
+  }
+}
+
+// Handle comment deleted - remove from list
+function handleCommentDeleted(postId: string, commentId: string) {
+  if (postComments.value[postId]) {
+    postComments.value[postId] = postComments.value[postId].filter(c => c.id !== commentId);
+
+    // Update pagination total count
+    if (commentsPagination.value[postId]) {
+      commentsPagination.value[postId] = {
+        ...commentsPagination.value[postId],
+        total: Math.max(0, commentsPagination.value[postId].total - 1),
+      };
+    }
+  }
+}
+
+async function loadComments(postId: string, append: boolean = false) {
   try {
-    const response = await commentsService.getComments(postId);
-    postComments.value[postId] = response.data.comments;
+    const currentPagination = commentsPagination.value[postId];
+    const offset = append && currentPagination
+      ? currentPagination.offset + currentPagination.limit
+      : 0;
+
+    const response = await commentsService.getComments(postId, {
+      limit: 10,
+      offset
+    });
+
+    if (append) {
+      postComments.value[postId] = [
+        ...(postComments.value[postId] || []),
+        ...response.data.comments
+      ];
+    } else {
+      postComments.value[postId] = response.data.comments;
+    }
+
+    if (response.data.pagination) {
+      commentsPagination.value[postId] = response.data.pagination;
+    }
   } catch (err) {
     console.error('Failed to load comments:', err);
   }
@@ -207,7 +315,7 @@ async function loadComments(postId: string) {
 
 async function handleSearch() {
   if (!searchQuery.value.trim()) {
-    await loadPosts();
+    await loadPosts(false);
     return;
   }
 
@@ -216,6 +324,7 @@ async function handleSearch() {
   try {
     const response = await postsService.searchPosts(searchQuery.value);
     posts.value = response.data.posts;
+    pagination.value = null; // Reset pagination for search results
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Search failed';
   } finally {
@@ -230,7 +339,7 @@ async function handleCreatePost() {
   try {
     await postsService.createPost({ content: newPostContent.value });
     newPostContent.value = '';
-    await loadPosts();
+    await loadPosts(false);
   } catch (err: any) {
     alert(err.response?.data?.error || 'Failed to create post');
   } finally {
@@ -261,7 +370,7 @@ async function saveEdit() {
     editingPostId.value = null;
     editContent.value = '';
     isEditDialogVisible.value = false;
-    await loadPosts();
+    await loadPosts(false);
   } catch (err: any) {
     alert(err.response?.data?.error || 'Failed to update post');
   } finally {
@@ -275,7 +384,7 @@ async function handleDeletePost(post: Post) {
   deletingPostId.value = post.id;
   try {
     await postsService.deletePost(post.id);
-    await loadPosts();
+    await loadPosts(false);
   } catch (err: any) {
     alert(err.response?.data?.error || 'Failed to delete post');
   } finally {
@@ -283,7 +392,40 @@ async function handleDeletePost(post: Post) {
   }
 }
 
-onMounted(() => {
-  loadPosts();
+// Setup intersection observer for infinite scroll
+function setupIntersectionObserver() {
+  if (!loadMoreTrigger.value) return;
+
+  intersectionObserver = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0];
+      if (entry && entry.isIntersecting && hasMorePosts.value && !loadingMore.value && !loading.value) {
+        loadPosts(true);
+      }
+    },
+    {
+      root: null,
+      rootMargin: '100px',
+      threshold: 0.1,
+    }
+  );
+
+  intersectionObserver.observe(loadMoreTrigger.value);
+}
+
+function cleanupIntersectionObserver() {
+  if (intersectionObserver) {
+    intersectionObserver.disconnect();
+    intersectionObserver = null;
+  }
+}
+
+onMounted(async () => {
+  await loadPosts(false);
+  setupIntersectionObserver();
+});
+
+onUnmounted(() => {
+  cleanupIntersectionObserver();
 });
 </script>

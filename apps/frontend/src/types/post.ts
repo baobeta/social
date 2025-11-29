@@ -49,10 +49,17 @@ export interface UpdateCommentData {
   content: string;
 }
 
+export interface PaginationMeta {
+  limit: number;
+  offset: number;
+  total: number;
+}
+
 export interface PostsResponse {
   success: boolean;
   data: {
     posts: Post[];
+    pagination?: PaginationMeta;
     total?: number;
   };
   error: string | null;
@@ -70,6 +77,7 @@ export interface CommentsResponse {
   success: boolean;
   data: {
     comments: Comment[];
+    pagination?: PaginationMeta;
     total?: number;
   };
   error: string | null;
