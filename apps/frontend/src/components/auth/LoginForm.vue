@@ -13,9 +13,14 @@
         v-model="username"
         type="text"
         required
+        pattern="[a-zA-Z0-9_]+"
         placeholder="Enter your username"
         class="w-full"
+        :class="{ 'p-invalid': usernameError }"
+        @blur="validateUsername"
       />
+      <small v-if="usernameError" class="text-red-600">{{ usernameError }}</small>
+      <small v-else class="text-gray-500">Only letters, numbers, and underscores allowed</small>
     </div>
 
     <div class="flex flex-col gap-2">
@@ -46,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Button from 'primevue/button';
@@ -71,13 +76,38 @@ const emit = defineEmits<{
   submit: [];
 }>();
 
+const usernameError = ref<string>('');
+
 const username = computed({
   get: () => props.modelValue.username,
-  set: (value) => emit('update:modelValue', { ...props.modelValue, username: value }),
+  set: (value) => {
+    emit('update:modelValue', { ...props.modelValue, username: value });
+    // Clear error when user types
+    if (usernameError.value) {
+      usernameError.value = '';
+    }
+  },
 });
 
 const password = computed({
   get: () => props.modelValue.password,
   set: (value) => emit('update:modelValue', { ...props.modelValue, password: value }),
 });
+
+function validateUsername() {
+  const usernamePattern = /^[a-zA-Z0-9_]+$/;
+
+  if (!props.modelValue.username) {
+    usernameError.value = 'Username is required';
+    return false;
+  }
+
+  if (!usernamePattern.test(props.modelValue.username)) {
+    usernameError.value = 'Username can only contain letters, numbers, and underscores';
+    return false;
+  }
+
+  usernameError.value = '';
+  return true;
+}
 </script>

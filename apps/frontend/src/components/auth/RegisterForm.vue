@@ -29,9 +29,14 @@
         @update:model-value="updateField('username', $event)"
         type="text"
         required
+        pattern="[a-zA-Z0-9_]+"
         placeholder="johndoe"
         class="w-full"
+        :class="{ 'p-invalid': usernameError }"
+        @blur="validateUsername"
       />
+      <small v-if="usernameError" class="text-red-600">{{ usernameError }}</small>
+      <small v-else class="text-gray-500">Only letters, numbers, and underscores allowed</small>
     </div>
 
     <div class="flex flex-col gap-2">
@@ -107,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { RegisterData } from '@/types/auth';
 import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator.vue';
 import InputText from 'primevue/inputtext';
@@ -134,6 +139,8 @@ const emit = defineEmits<{
   submit: [];
 }>();
 
+const usernameError = ref<string>('');
+
 const roleOptions = [
   { label: 'User', value: 'user' },
   { label: 'Admin', value: 'admin' },
@@ -145,7 +152,8 @@ const isValid = computed(() => {
     props.modelValue.username &&
     props.modelValue.password &&
     props.confirmPassword &&
-    props.modelValue.password === props.confirmPassword
+    props.modelValue.password === props.confirmPassword &&
+    !usernameError.value
   );
 });
 
@@ -154,10 +162,40 @@ function updateField(field: keyof RegisterData, value: any) {
     ...props.modelValue,
     [field]: value,
   });
+
+  // Clear username error when user types
+  if (field === 'username' && usernameError.value) {
+    usernameError.value = '';
+  }
+}
+
+function validateUsername() {
+  const usernamePattern = /^[a-zA-Z0-9_]+$/;
+
+  if (!props.modelValue.username) {
+    usernameError.value = 'Username is required';
+    return false;
+  }
+
+  if (!usernamePattern.test(props.modelValue.username)) {
+    usernameError.value = 'Username can only contain letters, numbers, and underscores';
+    return false;
+  }
+
+  if (props.modelValue.username.length < 3) {
+    usernameError.value = 'Username must be at least 3 characters';
+    return false;
+  }
+
+  usernameError.value = '';
+  return true;
 }
 
 function handleSubmit() {
-  if (isValid.value) {
+  // Validate username before submission
+  const isUsernameValid = validateUsername();
+
+  if (isValid.value && isUsernameValid) {
     emit('submit');
   }
 }

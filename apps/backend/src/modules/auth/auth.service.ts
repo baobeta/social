@@ -46,7 +46,7 @@ export class AuthService {
       fullName: data.fullName,
       displayName: data.displayName || null,
       initials: generateInitials(data.fullName),
-      role: 'user',
+      role: data.role,
     });
 
     // Generate access token (short-lived, 15 minutes)

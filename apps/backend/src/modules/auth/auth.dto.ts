@@ -22,6 +22,7 @@ export const registerSchema = z.object({
     .string()
     .max(100, 'Display name must be at most 100 characters')
     .optional(),
+  role: z.enum(['user', 'admin']).default('user'),
 });
 
 export const loginSchema = z.object({
