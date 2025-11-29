@@ -18,7 +18,7 @@
     </PostHeader>
 
     <!-- Post Content -->
-    <PostContent :content="post.content" />
+    <PostContent :content="post.content" :is-deleted="post.isDeleted" />
 
     <!-- Social Actions Footer -->
     <PostFooter

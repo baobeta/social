@@ -4,7 +4,7 @@
 
     <div class="flex-1 min-w-0">
       <div class="flex items-center justify-between">
-        <div>
+        <div class="flex-1">
           <div class="flex items-center gap-2">
             <p class="text-sm font-semibold text-gray-900">
               {{ post.author.fullName }}
@@ -12,6 +12,12 @@
             <span v-if="post.author.role === 'admin'" class="text-xs font-medium text-primary-600">
               Admin
             </span>
+            <Tag
+              v-if="post.isDeleted"
+              value="Deleted"
+              severity="danger"
+              class="text-xs"
+            />
           </div>
           <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
             <span>@{{ post.author.username }}</span>
@@ -28,13 +34,6 @@
 
         <slot name="actions"></slot>
       </div>
-
-      <Tag
-        v-if="post.isDeleted"
-        value="Deleted"
-        severity="danger"
-        class="mt-2"
-      />
     </div>
   </div>
 </template>

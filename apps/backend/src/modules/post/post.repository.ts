@@ -143,16 +143,22 @@ export class PostRepository {
 
   /**
    * Count total number of posts in timeline
-   * @returns Total count of non-deleted posts
+   * @param includeDeleted - Whether to include deleted posts in count
+   * @returns Total count of posts (with or without deleted posts)
    */
-  async countTimeline(): Promise<number> {
-    const result = await this.db
+  async countTimeline(includeDeleted: boolean = false): Promise<number> {
+    const query = this.db
       .select({
         count: sql<number>`count(*)::int`,
       })
-      .from(posts)
-      .where(eq(posts.isDeleted, false));
+      .from(posts);
 
+    // Only filter out deleted posts if includeDeleted is false
+    if (!includeDeleted) {
+      query.where(eq(posts.isDeleted, false));
+    }
+
+    const result = await query;
     return result[0]?.count ?? 0;
   }
 

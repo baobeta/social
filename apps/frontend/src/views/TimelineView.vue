@@ -8,19 +8,6 @@
         @search="handleSearch"
       />
 
-      <!-- Admin toggle to show/hide deleted posts -->
-      <div v-if="authStore.isAdmin" class="mb-4 flex items-center gap-2 p-4 bg-white rounded-lg shadow">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            v-model="showDeletedPosts"
-            @change="handleToggleDeletedPosts"
-            class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-          />
-          <span class="text-sm font-medium text-gray-700">Show deleted posts</span>
-        </label>
-      </div>
-
       <CreatePostForm
         v-model="newPostContent"
         :loading="createLoading"
@@ -100,7 +87,6 @@ const isEditDialogVisible = ref(false);
 const editContent = ref('');
 const editLoading = ref(false);
 const deletingPostId = ref<string | null>(null);
-const showDeletedPosts = ref(false);
 
 // Pagination state
 const pagination = ref<PaginationMeta | null>(null);
@@ -132,7 +118,7 @@ async function loadPosts(append: boolean = false) {
     const response = await postsService.getPosts({
       limit: 20,
       offset,
-      includeDeleted: authStore.isAdmin ? showDeletedPosts.value : false
+      includeDeleted: authStore.isAdmin
     });
 
     if (append) {
@@ -150,11 +136,6 @@ async function loadPosts(append: boolean = false) {
     loading.value = false;
     loadingMore.value = false;
   }
-}
-
-async function handleToggleDeletedPosts() {
-  // Reload posts when toggle changes
-  await loadPosts(false);
 }
 
 // Handle comment section toggle - load comments only when expanded
@@ -321,7 +302,6 @@ async function saveEdit() {
 }
 
 async function handleDeletePost(post: Post) {
-  if (!confirm('Are you sure you want to delete this post?')) return;
 
   deletingPostId.value = post.id;
   try {

@@ -129,7 +129,7 @@ export class PostService {
     // Cache miss - fetch from database
     const [postsData, total] = await Promise.all([
       this.repository.getTimeline(safeLimit, safeOffset, includeDeleted),
-      this.repository.countTimeline(),
+      this.repository.countTimeline(includeDeleted),
     ]);
 
     // Get comment counts for all posts in a single query (prevents N+1)

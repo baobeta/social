@@ -54,7 +54,6 @@ export const timelineQuerySchema = z.object({
   includeDeleted: z
     .string()
     .optional()
-    .transform((val) => val === 'true')
     .default('false')
     .transform((val) => val === 'true'),
 });

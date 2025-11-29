@@ -5,6 +5,7 @@ import { createTestUser, createTestPost } from '../../../test/fixtures.js';
 import { cleanDatabase } from '../../../test/setup.js';
 import { countQueries } from '../../../test/query-counter.js';
 import type { AuthUser } from '../../../lib/authorization.js';
+import { cacheService } from '../../../lib/cache.js';
 
 /**
  * Integration tests for PostService
@@ -16,6 +17,8 @@ describe('PostService - Integration Tests', () => {
 
   beforeEach(async () => {
     await cleanDatabase();
+    // Clear cache between tests to prevent stale data
+    await cacheService.delPattern('*');
     repository = new PostRepository();
     service = new PostService(repository);
   });
@@ -54,6 +57,7 @@ describe('PostService - Integration Tests', () => {
         username: 'john',
         fullName: 'John Doe',
         displayName: 'Johnny',
+        role: 'user',
       });
     });
   });
@@ -463,6 +467,113 @@ describe('PostService - Integration Tests', () => {
       // Query count should still be 2, even with 5 different authors
       // This proves JOIN works correctly with multiple authors
       expect(queryCount).toBe(2);
+    });
+  });
+
+  describe('Admin includeDeleted Feature', () => {
+    it('should exclude deleted posts by default (includeDeleted=false)', async () => {
+      const user = await createTestUser();
+
+      await createTestPost(user.id, { content: 'Active post 1' });
+      await createTestPost(user.id, { content: 'Active post 2' });
+      await createTestPost(user.id, {
+        content: 'Deleted post 1',
+        isDeleted: true,
+        deletedAt: new Date(),
+      });
+      await createTestPost(user.id, {
+        content: 'Deleted post 2',
+        isDeleted: true,
+        deletedAt: new Date(),
+      });
+
+      const result = await service.getTimeline(20, 0, false);
+
+      expect(result.posts).toHaveLength(2);
+      expect(result.posts.every((p) => !p.isDeleted)).toBe(true);
+      expect(result.pagination.total).toBe(2); // Count should match
+    });
+
+    it('should include deleted posts when includeDeleted=true', async () => {
+      const user = await createTestUser();
+
+      await createTestPost(user.id, { content: 'Active post 1' });
+      await createTestPost(user.id, { content: 'Active post 2' });
+      await createTestPost(user.id, {
+        content: 'Deleted post 1',
+        isDeleted: true,
+        deletedAt: new Date(),
+      });
+      await createTestPost(user.id, {
+        content: 'Deleted post 2',
+        isDeleted: true,
+        deletedAt: new Date(),
+      });
+
+      const result = await service.getTimeline(20, 0, true);
+
+      expect(result.posts).toHaveLength(4);
+      expect(result.pagination.total).toBe(4); // Count should include deleted posts
+
+      const deletedPosts = result.posts.filter((p) => p.isDeleted);
+      expect(deletedPosts).toHaveLength(2);
+
+      const activePosts = result.posts.filter((p) => !p.isDeleted);
+      expect(activePosts).toHaveLength(2);
+    });
+
+    it('should correctly paginate when includeDeleted=true', async () => {
+      const user = await createTestUser();
+
+      // Create 5 active and 5 deleted posts
+      for (let i = 1; i <= 5; i++) {
+        await createTestPost(user.id, { content: `Active post ${i}` });
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      for (let i = 1; i <= 5; i++) {
+        await createTestPost(user.id, {
+          content: `Deleted post ${i}`,
+          isDeleted: true,
+          deletedAt: new Date(),
+        });
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+
+      // First page with includeDeleted=true
+      const page1 = await service.getTimeline(3, 0, true);
+      expect(page1.posts).toHaveLength(3);
+      expect(page1.pagination.total).toBe(10);
+      expect(page1.pagination.offset).toBe(0);
+
+      // Second page with includeDeleted=true
+      const page2 = await service.getTimeline(3, 3, true);
+      expect(page2.posts).toHaveLength(3);
+      expect(page2.pagination.total).toBe(10);
+      expect(page2.pagination.offset).toBe(3);
+
+      // Ensure different posts
+      expect(page1.posts[0]?.id).not.toBe(page2.posts[0]?.id);
+    });
+
+    it('should have correct count with mixed deleted/active posts', async () => {
+      const user = await createTestUser();
+
+      await createTestPost(user.id, { content: 'Active 1' });
+      await createTestPost(user.id, { content: 'Deleted 1', isDeleted: true, deletedAt: new Date() });
+      await createTestPost(user.id, { content: 'Active 2' });
+      await createTestPost(user.id, { content: 'Deleted 2', isDeleted: true, deletedAt: new Date() });
+      await createTestPost(user.id, { content: 'Active 3' });
+      await createTestPost(user.id, { content: 'Deleted 3', isDeleted: true, deletedAt: new Date() });
+
+      // Without deleted posts
+      const withoutDeleted = await service.getTimeline(20, 0, false);
+      expect(withoutDeleted.posts).toHaveLength(3);
+      expect(withoutDeleted.pagination.total).toBe(3);
+
+      // With deleted posts
+      const withDeleted = await service.getTimeline(20, 0, true);
+      expect(withDeleted.posts).toHaveLength(6);
+      expect(withDeleted.pagination.total).toBe(6);
     });
   });
 });

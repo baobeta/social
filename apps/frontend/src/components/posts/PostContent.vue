@@ -1,6 +1,11 @@
 <template>
   <div class="px-card pb-card">
-    <p class="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+    <p
+      :class="[
+        'text-sm whitespace-pre-wrap leading-relaxed',
+        isDeleted ? 'text-gray-400 line-through' : 'text-gray-900'
+      ]"
+    >
       {{ content }}
     </p>
   </div>
@@ -9,7 +14,10 @@
 <script setup lang="ts">
 interface Props {
   content: string;
+  isDeleted?: boolean;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+  isDeleted: false
+});
 </script>
