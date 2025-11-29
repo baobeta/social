@@ -8,7 +8,7 @@ export interface User {
   username: string;
   fullName: string;
   displayName?: string | null;
-  role: UserRole;
+  role: string; // Changed from UserRole to string to match backend response
   createdAt?: string;
   updatedAt?: string;
 }
@@ -22,7 +22,7 @@ export interface RegisterData {
   username: string;
   password: string;
   fullName: string;
-  role: UserRole;
+  role: string;
 }
 
 export interface AuthResponse {

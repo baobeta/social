@@ -62,16 +62,21 @@ const menuVisible = ref(false);
 
 const canEdit = computed(() => {
   if (!authStore.user) return false;
+  console.log(props.post)
+  // Cannot edit deleted posts
+  if (props.post.isDeleted) return false;
   return (
-    authStore.user.id === props.post.authorId ||
+    authStore.user.id === props.post.author.id ||
     authStore.isAdmin
   );
 });
 
 const canDelete = computed(() => {
   if (!authStore.user) return false;
+  // Cannot delete already deleted posts
+  if (props.post.isDeleted) return false;
   return (
-    authStore.user.id === props.post.authorId ||
+    authStore.user.id === props.post.author.id ||
     authStore.isAdmin
   );
 });
