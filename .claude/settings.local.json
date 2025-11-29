@@ -21,7 +21,16 @@
       "Bash(chmod:*)",
       "Bash(npm test:*)",
       "Bash(node -e:*)",
-      "Bash(npm run test:integration:*)"
+      "Bash(npm run test:integration:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run dev:*)",
+      "Bash(tsx:*)",
+      "Bash(npm run dev:backend:*)",
+      "Bash(node --version)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(npm run type-check:*)"
     ],
     "deny": [],
     "ask": []

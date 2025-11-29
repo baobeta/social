@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { config } from './lib/config.js';
 import { logger } from './lib/logger.js';
+import { getRedisClient, closeRedis } from './lib/redis.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { securityHeaders, customSecurityHeaders, requestId } from './middleware/security.middleware.js';
 import { authRateLimit, apiRateLimit } from './middleware/rate-limit.middleware.js';
@@ -14,6 +15,9 @@ import postRoutes from './modules/post/post.routes.js';
 import commentRoutes from './modules/comment/comment.routes.js';
 
 const app = express();
+
+// Initialize Redis connection
+getRedisClient();
 
 // Request tracking - add unique ID to each request
 app.use(requestId);
@@ -70,6 +74,10 @@ const server = app.listen(config.port, config.host, () => {
 // Graceful shutdown
 const shutdown = async () => {
   logger.info('Shutting down gracefully...');
+
+  // Close Redis connection
+  await closeRedis();
+
   server.close(() => {
     logger.info('Server closed');
     process.exit(0);

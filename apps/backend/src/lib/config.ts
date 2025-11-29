@@ -10,6 +10,7 @@ const envSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string(),
   TEST_DATABASE_URL: z.string().optional(),
+  REDIS_URL: z.string().optional().default('redis://localhost:6379'),
   JWT_SECRET: z.string(),
   JWT_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
@@ -39,6 +40,9 @@ export const config = {
     url: env.NODE_ENV === 'test' && env.TEST_DATABASE_URL
       ? env.TEST_DATABASE_URL
       : env.DATABASE_URL,
+  },
+  redis: {
+    url: env.REDIS_URL,
   },
   auth: {
     jwtSecret: env.JWT_SECRET,

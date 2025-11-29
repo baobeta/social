@@ -10,6 +10,7 @@ import type {
   CommentResponse,
 } from './comment.dto.js';
 import { AuthorizationService, type AuthUser } from '../../lib/authorization.js';
+import { cacheService } from '../../lib/cache.js';
 
 /**
  * Service for comment business logic
@@ -17,9 +18,55 @@ import { AuthorizationService, type AuthUser } from '../../lib/authorization.js'
  */
 export class CommentService {
   private repository: CommentRepository;
+  private readonly CACHE_TTL = 300; // 5 minutes
+  private readonly COMMENT_CACHE_PREFIX = 'comment:';
+  private readonly COMMENTS_LIST_PREFIX = 'comments:post:';
+  private readonly REPLIES_LIST_PREFIX = 'replies:comment:';
 
   constructor(repository: CommentRepository = new CommentRepository()) {
     this.repository = repository;
+  }
+
+  /**
+   * Generate cache key for a single comment
+   */
+  private getCommentCacheKey(commentId: string): string {
+    return `${this.COMMENT_CACHE_PREFIX}${commentId}`;
+  }
+
+  /**
+   * Generate cache key for comments list by post
+   */
+  private getCommentsListCacheKey(postId: string, limit: number, offset: number): string {
+    return `${this.COMMENTS_LIST_PREFIX}${postId}:${limit}:${offset}`;
+  }
+
+  /**
+   * Generate cache key for replies list by comment
+   */
+  private getRepliesListCacheKey(commentId: string, limit: number, offset: number): string {
+    return `${this.REPLIES_LIST_PREFIX}${commentId}:${limit}:${offset}`;
+  }
+
+  /**
+   * Invalidate comment cache
+   */
+  private async invalidateCommentCache(commentId: string): Promise<void> {
+    await cacheService.del(this.getCommentCacheKey(commentId));
+  }
+
+  /**
+   * Invalidate all comments list cache for a post
+   */
+  private async invalidateCommentsListCache(postId: string): Promise<void> {
+    await cacheService.delPattern(`${this.COMMENTS_LIST_PREFIX}${postId}:*`);
+  }
+
+  /**
+   * Invalidate all replies list cache for a comment
+   */
+  private async invalidateRepliesListCache(commentId: string): Promise<void> {
+    await cacheService.delPattern(`${this.REPLIES_LIST_PREFIX}${commentId}:*`);
   }
 
   /**
@@ -66,7 +113,7 @@ export class CommentService {
       throw new Error('Failed to retrieve created comment');
     }
 
-    return {
+    const response = {
       comment: {
         id: commentWithAuthor.id,
         content: commentWithAuthor.content,
@@ -80,6 +127,19 @@ export class CommentService {
         updatedAt: commentWithAuthor.updatedAt,
       },
     };
+
+    // Cache the created comment
+    await cacheService.set(this.getCommentCacheKey(comment.id), response.comment, this.CACHE_TTL);
+
+    // Invalidate comments list cache for the post
+    await this.invalidateCommentsListCache(postId);
+
+    // If this is a reply, also invalidate the parent's replies cache
+    if (data.parentCommentId) {
+      await this.invalidateRepliesListCache(data.parentCommentId);
+    }
+
+    return response;
   }
 
   /**
@@ -88,6 +148,15 @@ export class CommentService {
    * @returns Comment with author information
    */
   async getCommentById(commentId: string): Promise<GetCommentResponse> {
+    // Try to get from cache first (cache-aside pattern)
+    const cacheKey = this.getCommentCacheKey(commentId);
+    const cachedComment = await cacheService.get<CommentResponse>(cacheKey);
+
+    if (cachedComment) {
+      return { comment: cachedComment };
+    }
+
+    // Cache miss - fetch from database
     const comment = await this.repository.findById(commentId);
 
     if (!comment) {
@@ -98,20 +167,23 @@ export class CommentService {
       throw new Error('Comment has been deleted');
     }
 
-    return {
-      comment: {
-        id: comment.id,
-        content: comment.content,
-        author: comment.author,
-        postId: comment.postId,
-        parentCommentId: comment.parentCommentId,
-        isDeleted: comment.isDeleted,
-        isEdited: comment.isEdited,
-        editedAt: comment.editedAt,
-        createdAt: comment.createdAt,
-        updatedAt: comment.updatedAt,
-      },
+    const commentResponse = {
+      id: comment.id,
+      content: comment.content,
+      author: comment.author,
+      postId: comment.postId,
+      parentCommentId: comment.parentCommentId,
+      isDeleted: comment.isDeleted,
+      isEdited: comment.isEdited,
+      editedAt: comment.editedAt,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
     };
+
+    // Store in cache for future requests
+    await cacheService.set(cacheKey, commentResponse, this.CACHE_TTL);
+
+    return { comment: commentResponse };
   }
 
   /**
@@ -129,7 +201,15 @@ export class CommentService {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const safeOffset = Math.max(offset, 0);
 
-    // Fetch comments with author info (single query with JOIN)
+    // Try to get from cache first (cache-aside pattern)
+    const cacheKey = this.getCommentsListCacheKey(postId, safeLimit, safeOffset);
+    const cachedResponse = await cacheService.get<GetCommentsResponse>(cacheKey);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // Cache miss - fetch from database
     const commentsData = await this.repository.getByPostId(
       postId,
       safeLimit,
@@ -156,7 +236,7 @@ export class CommentService {
     // Get total count for pagination
     const total = await this.repository.countByPostId(postId);
 
-    return {
+    const response = {
       comments,
       pagination: {
         limit: safeLimit,
@@ -164,6 +244,11 @@ export class CommentService {
         total,
       },
     };
+
+    // Store in cache for future requests
+    await cacheService.set(cacheKey, response, this.CACHE_TTL);
+
+    return response;
   }
 
   /**
@@ -192,7 +277,15 @@ export class CommentService {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const safeOffset = Math.max(offset, 0);
 
-    // Fetch replies with author info (single query with JOIN)
+    // Try to get from cache first (cache-aside pattern)
+    const cacheKey = this.getRepliesListCacheKey(commentId, safeLimit, safeOffset);
+    const cachedResponse = await cacheService.get<GetRepliesResponse>(cacheKey);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // Cache miss - fetch from database
     const repliesData = await this.repository.getReplies(
       commentId,
       safeLimit,
@@ -215,7 +308,7 @@ export class CommentService {
     // Get total count for pagination
     const total = await this.repository.countReplies(commentId);
 
-    return {
+    const response = {
       replies,
       pagination: {
         limit: safeLimit,
@@ -223,6 +316,11 @@ export class CommentService {
         total,
       },
     };
+
+    // Store in cache for future requests
+    await cacheService.set(cacheKey, response, this.CACHE_TTL);
+
+    return response;
   }
 
   /**
@@ -263,7 +361,7 @@ export class CommentService {
       throw new Error('Failed to retrieve updated comment');
     }
 
-    return {
+    const response = {
       comment: {
         id: updatedComment.id,
         content: updatedComment.content,
@@ -277,6 +375,22 @@ export class CommentService {
         updatedAt: updatedComment.updatedAt,
       },
     };
+
+    // Invalidate caches
+    await Promise.all([
+      this.invalidateCommentCache(commentId),
+      this.invalidateCommentsListCache(existingComment.postId),
+    ]);
+
+    // If this is a reply, also invalidate the parent's replies cache
+    if (existingComment.parentCommentId) {
+      await this.invalidateRepliesListCache(existingComment.parentCommentId);
+    }
+
+    // Update cache with new data
+    await cacheService.set(this.getCommentCacheKey(commentId), response.comment, this.CACHE_TTL);
+
+    return response;
   }
 
   /**
@@ -303,5 +417,16 @@ export class CommentService {
 
     // Soft delete the comment
     await this.repository.softDelete(commentId, user.userId);
+
+    // Invalidate caches
+    await Promise.all([
+      this.invalidateCommentCache(commentId),
+      this.invalidateCommentsListCache(existingComment.postId),
+    ]);
+
+    // If this is a reply, also invalidate the parent's replies cache
+    if (existingComment.parentCommentId) {
+      await this.invalidateRepliesListCache(existingComment.parentCommentId);
+    }
   }
 }

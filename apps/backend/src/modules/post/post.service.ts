@@ -9,6 +9,7 @@ import type {
   PostDetailResponse,
 } from './post.dto.js';
 import { AuthorizationService, type AuthUser } from '../../lib/authorization.js';
+import { cacheService } from '../../lib/cache.js';
 
 /**
  * Service for post management
@@ -16,9 +17,40 @@ import { AuthorizationService, type AuthUser } from '../../lib/authorization.js'
  */
 export class PostService {
   private repository: PostRepository;
+  private readonly CACHE_TTL = 300; // 5 minutes
+  private readonly POST_CACHE_PREFIX = 'post:';
+  private readonly TIMELINE_CACHE_PREFIX = 'timeline:';
 
   constructor(repository: PostRepository = new PostRepository()) {
     this.repository = repository;
+  }
+
+  /**
+   * Generate cache key for a single post
+   */
+  private getPostCacheKey(postId: string): string {
+    return `${this.POST_CACHE_PREFIX}${postId}`;
+  }
+
+  /**
+   * Generate cache key for timeline
+   */
+  private getTimelineCacheKey(limit: number, offset: number): string {
+    return `${this.TIMELINE_CACHE_PREFIX}${limit}:${offset}`;
+  }
+
+  /**
+   * Invalidate all timeline cache entries
+   */
+  private async invalidateTimelineCache(): Promise<void> {
+    await cacheService.delPattern(`${this.TIMELINE_CACHE_PREFIX}*`);
+  }
+
+  /**
+   * Invalidate post cache
+   */
+  private async invalidatePostCache(postId: string): Promise<void> {
+    await cacheService.del(this.getPostCacheKey(postId));
   }
 
   /**
@@ -41,7 +73,7 @@ export class PostService {
       throw new Error('Failed to retrieve created post');
     }
 
-    return {
+    const response = {
       post: {
         id: postWithAuthor.id,
         content: postWithAuthor.content,
@@ -53,6 +85,14 @@ export class PostService {
         updatedAt: postWithAuthor.updatedAt,
       },
     };
+
+    // Cache the created post
+    await cacheService.set(this.getPostCacheKey(post.id), response.post, this.CACHE_TTL);
+
+    // Invalidate timeline cache since a new post was created
+    await this.invalidateTimelineCache();
+
+    return response;
   }
 
   /**
@@ -68,7 +108,15 @@ export class PostService {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const safeOffset = Math.max(offset, 0);
 
-    // Fetch posts and total count in parallel
+    // Try to get from cache first (cache-aside pattern)
+    const cacheKey = this.getTimelineCacheKey(safeLimit, safeOffset);
+    const cachedTimeline = await cacheService.get<TimelineResponse>(cacheKey);
+
+    if (cachedTimeline) {
+      return cachedTimeline;
+    }
+
+    // Cache miss - fetch from database
     const [postsData, total] = await Promise.all([
       this.repository.getTimeline(safeLimit, safeOffset),
       this.repository.countTimeline(),
@@ -85,7 +133,7 @@ export class PostService {
       updatedAt: post.updatedAt,
     }));
 
-    return {
+    const response = {
       posts,
       pagination: {
         limit: safeLimit,
@@ -93,6 +141,11 @@ export class PostService {
         total,
       },
     };
+
+    // Store in cache for future requests
+    await cacheService.set(cacheKey, response, this.CACHE_TTL);
+
+    return response;
   }
 
   /**
@@ -102,6 +155,15 @@ export class PostService {
    * @throws Error if post not found or deleted
    */
   async getPostById(postId: string): Promise<PostDetailResponse> {
+    // Try to get from cache first (cache-aside pattern)
+    const cacheKey = this.getPostCacheKey(postId);
+    const cachedPost = await cacheService.get<PostResponse>(cacheKey);
+
+    if (cachedPost) {
+      return { post: cachedPost };
+    }
+
+    // Cache miss - fetch from database
     const post = await this.repository.findById(postId);
 
     if (!post) {
@@ -112,18 +174,21 @@ export class PostService {
       throw new Error('Post has been deleted');
     }
 
-    return {
-      post: {
-        id: post.id,
-        content: post.content,
-        author: post.author,
-        isDeleted: post.isDeleted,
-        isEdited: post.isEdited,
-        editedAt: post.editedAt,
-        createdAt: post.createdAt,
-        updatedAt: post.updatedAt,
-      },
+    const postResponse = {
+      id: post.id,
+      content: post.content,
+      author: post.author,
+      isDeleted: post.isDeleted,
+      isEdited: post.isEdited,
+      editedAt: post.editedAt,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
     };
+
+    // Store in cache for future requests
+    await cacheService.set(cacheKey, postResponse, this.CACHE_TTL);
+
+    return { post: postResponse };
   }
 
   /**
@@ -166,7 +231,7 @@ export class PostService {
       throw new Error('Failed to retrieve updated post');
     }
 
-    return {
+    const response = {
       post: {
         id: updatedPost.id,
         content: updatedPost.content,
@@ -178,6 +243,17 @@ export class PostService {
         updatedAt: updatedPost.updatedAt,
       },
     };
+
+    // Invalidate caches
+    await Promise.all([
+      this.invalidatePostCache(postId),
+      this.invalidateTimelineCache(),
+    ]);
+
+    // Update cache with new data
+    await cacheService.set(this.getPostCacheKey(postId), response.post, this.CACHE_TTL);
+
+    return response;
   }
 
   /**
@@ -206,6 +282,12 @@ export class PostService {
 
     // Soft delete the post
     await this.repository.softDelete(postId, user.userId);
+
+    // Invalidate caches
+    await Promise.all([
+      this.invalidatePostCache(postId),
+      this.invalidateTimelineCache(),
+    ]);
   }
 
   /**
