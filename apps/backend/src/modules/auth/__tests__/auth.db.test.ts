@@ -21,23 +21,28 @@ import { verifyToken } from '../../../lib/jwt.ts';
 describe('AuthService - Database Integration', () => {
   let service: AuthService;
   let repository: AuthRepository;
+  let mockRequest: any;
 
   beforeEach(async () => {
     await cleanDatabase();
     repository = new AuthRepository();
     service = new AuthService(repository);
+    mockRequest = {
+      headers: { 'user-agent': 'test-agent' },
+      ip: '127.0.0.1',
+    };
   });
 
   describe('register', () => {
     it('should create user in database with hashed password', async () => {
       const registerDto: RegisterDto = {
         username: 'newuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'New User',
         displayName: 'Newbie',
       };
 
-      const result = await service.register(registerDto);
+      const result = await service.register(registerDto, mockRequest);
 
       // Verify response
       expect(result.user.username).toBe(registerDto.username);
@@ -61,15 +66,15 @@ describe('AuthService - Database Integration', () => {
     it('should enforce unique username constraint', async () => {
       const registerDto: RegisterDto = {
         username: 'duplicateuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Duplicate User',
       };
 
       // First registration should succeed
-      await service.register(registerDto);
+      await service.register(registerDto, mockRequest);
 
       // Second registration with same username should fail
-      await expect(service.register(registerDto)).rejects.toThrow('Username already exists');
+      await expect(service.register(registerDto, mockRequest)).rejects.toThrow('Username already exists');
 
       // Verify only one user exists in database
       const users = await repository.findByUsername(registerDto.username);
@@ -79,11 +84,11 @@ describe('AuthService - Database Integration', () => {
     it('should handle optional displayName correctly', async () => {
       const registerDto: RegisterDto = {
         username: 'nodisplay',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'No Display User',
       };
 
-      const result = await service.register(registerDto);
+      const result = await service.register(registerDto, mockRequest);
 
       expect(result.user.displayName).toBeNull();
 
@@ -95,11 +100,11 @@ describe('AuthService - Database Integration', () => {
     it('should set default role to user', async () => {
       const registerDto: RegisterDto = {
         username: 'regularuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Regular User',
       };
 
-      const result = await service.register(registerDto);
+      const result = await service.register(registerDto, mockRequest);
 
       expect(result.user.role).toBe('user');
 
@@ -111,11 +116,11 @@ describe('AuthService - Database Integration', () => {
     it('should generate valid JWT token', async () => {
       const registerDto: RegisterDto = {
         username: 'tokenuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Token User',
       };
 
-      const result = await service.register(registerDto);
+      const result = await service.register(registerDto, mockRequest);
 
       // Verify token can be decoded
       const payload = verifyToken(result.token);
@@ -127,11 +132,11 @@ describe('AuthService - Database Integration', () => {
     it('should create user with createdAt and updatedAt timestamps', async () => {
       const registerDto: RegisterDto = {
         username: 'timestampuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Timestamp User',
       };
 
-      await service.register(registerDto);
+      await service.register(registerDto, mockRequest);
 
       // Verify timestamps in database
       const dbUser = await repository.findByUsername(registerDto.username);
@@ -150,10 +155,10 @@ describe('AuthService - Database Integration', () => {
 
       const loginDto: LoginDto = {
         username: 'loginuser',
-        password: 'password123', // Default password from fixture
+        password: 'Password123!', // Default password from fixture
       };
 
-      const result = await service.login(loginDto);
+      const result = await service.login(loginDto, mockRequest);
 
       expect(result.user.id).toBe(testUser.id);
       expect(result.user.username).toBe(testUser.username);
@@ -171,19 +176,19 @@ describe('AuthService - Database Integration', () => {
 
       const loginDto: LoginDto = {
         username: 'loginuser',
-        password: 'wrongpassword',
+        password: 'Wrongpassword1!',
       };
 
-      await expect(service.login(loginDto)).rejects.toThrow('Invalid username or password');
+      await expect(service.login(loginDto, mockRequest)).rejects.toThrow('Invalid username or password');
     });
 
     it('should reject login with non-existent username', async () => {
       const loginDto: LoginDto = {
         username: 'nonexistent',
-        password: 'password123',
+        password: 'Password123!',
       };
 
-      await expect(service.login(loginDto)).rejects.toThrow('Invalid username or password');
+      await expect(service.login(loginDto, mockRequest)).rejects.toThrow('Invalid username or password');
     });
 
     it('should not reveal if username or password was wrong', async () => {
@@ -191,12 +196,12 @@ describe('AuthService - Database Integration', () => {
 
       // Try with wrong username
       const wrongUsernameError = service
-        .login({ username: 'nonexistent', password: 'password123' })
+        .login({ username: 'nonexistent', password: 'Password123!' })
         .catch((e) => e);
 
       // Try with wrong password
       const wrongPasswordError = service
-        .login({ username: 'existinguser', password: 'wrongpassword' })
+        .login({ username: 'existinguser', password: 'Wrongpassword1!' })
         .catch((e) => e);
 
       const [error1, error2] = await Promise.all([wrongUsernameError, wrongPasswordError]);
@@ -212,10 +217,10 @@ describe('AuthService - Database Integration', () => {
       // Try with different case
       const loginDto: LoginDto = {
         username: 'casesensitive',
-        password: 'password123',
+        password: 'Password123!',
       };
 
-      await expect(service.login(loginDto)).rejects.toThrow('Invalid username or password');
+      await expect(service.login(loginDto, mockRequest)).rejects.toThrow('Invalid username or password');
     });
   });
 
@@ -260,7 +265,7 @@ describe('AuthService - Database Integration', () => {
         displayName: 'E2E',
       };
 
-      const registerResult = await service.register(registerDto);
+      const registerResult = await service.register(registerDto, mockRequest);
       expect(registerResult.token).toBeDefined();
 
       const userId = registerResult.user.id;
@@ -271,7 +276,7 @@ describe('AuthService - Database Integration', () => {
         password: registerDto.password,
       };
 
-      const loginResult = await service.login(loginDto);
+      const loginResult = await service.login(loginDto, mockRequest);
       expect(loginResult.user.id).toBe(userId);
       expect(loginResult.token).toBeDefined();
 

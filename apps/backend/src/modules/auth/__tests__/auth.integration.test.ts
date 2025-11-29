@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import express, { type Express } from 'express';
+import cookieParser from 'cookie-parser';
 import authRoutes from '../auth.routes.ts';
 import { db } from '../../../db/index.ts';
-import { users } from '../../../db/schema/index.ts';
+import { users, refreshTokens } from '../../../db/schema/index.ts';
 import { eq } from 'drizzle-orm';
 
 describe('Authentication API Integration Tests', () => {
@@ -13,6 +14,7 @@ describe('Authentication API Integration Tests', () => {
     // Setup Express app for testing
     app = express();
     app.use(express.json());
+    app.use(cookieParser()); // Required for HttpOnly cookies
     app.use('/api/auth', authRoutes);
 
     // Error handler
@@ -37,7 +39,7 @@ describe('Authentication API Integration Tests', () => {
     it('should register a new user successfully', async () => {
       const response = await request(app).post('/api/auth/register').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User',
         displayName: 'Tester',
       });
@@ -45,15 +47,21 @@ describe('Authentication API Integration Tests', () => {
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('user');
-      expect(response.body.data).toHaveProperty('token');
+      expect(response.body.data).not.toHaveProperty('token'); // Tokens now in HttpOnly cookies
       expect(response.body.data.user.username).toBe('testuser');
       expect(response.body.data.user).not.toHaveProperty('password');
+
+      // Check that cookies are set
+      const cookies = response.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      expect(cookies.some((c: string) => c.startsWith('access_token='))).toBe(true);
+      expect(cookies.some((c: string) => c.startsWith('refresh_token='))).toBe(true);
     });
 
     it('should fail with short username', async () => {
       const response = await request(app).post('/api/auth/register').send({
         username: 'ab',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User',
       });
 
@@ -76,7 +84,7 @@ describe('Authentication API Integration Tests', () => {
     it('should fail with invalid username characters', async () => {
       const response = await request(app).post('/api/auth/register').send({
         username: 'test user!',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User',
       });
 
@@ -88,14 +96,14 @@ describe('Authentication API Integration Tests', () => {
       // Register first user
       await request(app).post('/api/auth/register').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User',
       });
 
       // Try to register again
       const response = await request(app).post('/api/auth/register').send({
         username: 'testuser',
-        password: 'differentpassword',
+        password: 'Differentpass1!',
         fullName: 'Another User',
       });
 
@@ -107,7 +115,7 @@ describe('Authentication API Integration Tests', () => {
     it('should work without displayName', async () => {
       const response = await request(app).post('/api/auth/register').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User',
       });
 
@@ -121,7 +129,7 @@ describe('Authentication API Integration Tests', () => {
       // Register a user for login tests
       await request(app).post('/api/auth/register').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User',
       });
     });
@@ -129,20 +137,20 @@ describe('Authentication API Integration Tests', () => {
     it('should login successfully with correct credentials', async () => {
       const response = await request(app).post('/api/auth/login').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
       });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('user');
-      expect(response.body.data).toHaveProperty('token');
+      expect(response.body.data).not.toHaveProperty('token'); // Tokens now in HttpOnly cookies
       expect(response.body.data.user.username).toBe('testuser');
     });
 
     it('should fail with wrong password', async () => {
       const response = await request(app).post('/api/auth/login').send({
         username: 'testuser',
-        password: 'wrongpassword',
+        password: 'Wrongpassword1!',
       });
 
       expect(response.status).toBe(401);
@@ -153,7 +161,7 @@ describe('Authentication API Integration Tests', () => {
     it('should fail with non-existent username', async () => {
       const response = await request(app).post('/api/auth/login').send({
         username: 'nonexistent',
-        password: 'password123',
+        password: 'Password123!',
       });
 
       expect(response.status).toBe(401);
@@ -173,7 +181,7 @@ describe('Authentication API Integration Tests', () => {
     it('should return valid JWT token', async () => {
       const response = await request(app).post('/api/auth/login').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
       });
 
       const token = response.body.data.token;
@@ -190,7 +198,7 @@ describe('Authentication API Integration Tests', () => {
       // Register and login to get token
       const registerResponse = await request(app).post('/api/auth/register').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User',
       });
 
@@ -241,7 +249,7 @@ describe('Authentication API Integration Tests', () => {
       // Register and login to get token
       const registerResponse = await request(app).post('/api/auth/register').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User',
       });
 
@@ -270,7 +278,7 @@ describe('Authentication API Integration Tests', () => {
       // 1. Register
       const registerResponse = await request(app).post('/api/auth/register').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User',
         displayName: 'Tester',
       });
@@ -281,7 +289,7 @@ describe('Authentication API Integration Tests', () => {
       // 2. Login
       const loginResponse = await request(app).post('/api/auth/login').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
       });
 
       expect(loginResponse.status).toBe(200);
@@ -307,7 +315,7 @@ describe('Authentication API Integration Tests', () => {
       // Register user 1
       const user1Response = await request(app).post('/api/auth/register').send({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
         fullName: 'Test User 1',
       });
 
@@ -316,7 +324,7 @@ describe('Authentication API Integration Tests', () => {
       // Register user 2
       const user2Response = await request(app).post('/api/auth/register').send({
         username: 'anotheruser',
-        password: 'password456',
+        password: 'Password456!',
         fullName: 'Test User 2',
       });
 

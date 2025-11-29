@@ -14,19 +14,31 @@ vi.mock('../../../lib/password.ts', () => ({
 
 vi.mock('../../../lib/jwt.ts', () => ({
   generateToken: vi.fn(() => 'mock-jwt-token'),
+  generateAccessToken: vi.fn(() => 'mock-access-token'),
+  generateRefreshToken: vi.fn(() => 'mock-refresh-token'),
+}));
+
+vi.mock('../refresh-token.repository.ts', () => ({
+  RefreshTokenRepository: vi.fn().mockImplementation(() => ({
+    create: vi.fn(),
+    findValidToken: vi.fn(),
+    revokeToken: vi.fn(),
+  })),
 }));
 
 describe('AuthService', () => {
   let service: AuthService;
   let mockRepository: AuthRepository;
+  let mockRequest: any;
 
   const mockUser: User = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     username: 'testuser',
-    password: 'hashed_password123',
+    password: 'hashed_Password123!',
     fullName: 'Test User',
     displayName: 'Tester',
     role: 'user',
+    initials: 'TU',
     searchVector: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -40,13 +52,18 @@ describe('AuthService', () => {
       usernameExists: vi.fn(),
     } as any;
 
+    mockRequest = {
+      headers: { 'user-agent': 'test-agent' },
+      ip: '127.0.0.1',
+    };
+
     service = new AuthService(mockRepository);
   });
 
   describe('register', () => {
     const registerDto: RegisterDto = {
       username: 'newuser',
-      password: 'password123',
+      password: 'Password123!',
       fullName: 'New User',
       displayName: 'Newbie',
     };
@@ -55,12 +72,13 @@ describe('AuthService', () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(undefined);
       vi.mocked(mockRepository.create).mockResolvedValue(mockUser);
 
-      const result = await service.register(registerDto);
+      const result = await service.register(registerDto, mockRequest);
 
       expect(result).toBeDefined();
       expect(result.user.id).toBe(mockUser.id);
       expect(result.user.username).toBe(mockUser.username);
-      expect(result.token).toBe('mock-jwt-token');
+      expect(result.token).toBe('mock-access-token');
+      expect(result.refreshToken).toBe('mock-refresh-token');
       expect(mockRepository.findByUsername).toHaveBeenCalledWith(registerDto.username);
       expect(mockRepository.create).toHaveBeenCalled();
     });
@@ -68,7 +86,7 @@ describe('AuthService', () => {
     it('should throw error if username already exists', async () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(mockUser);
 
-      await expect(service.register(registerDto)).rejects.toThrow('Username already exists');
+      await expect(service.register(registerDto, mockRequest)).rejects.toThrow('Username already exists');
       expect(mockRepository.create).not.toHaveBeenCalled();
     });
 
@@ -76,17 +94,17 @@ describe('AuthService', () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(undefined);
       vi.mocked(mockRepository.create).mockResolvedValue(mockUser);
 
-      await service.register(registerDto);
+      await service.register(registerDto, mockRequest);
 
       const createCall = vi.mocked(mockRepository.create).mock.calls[0][0];
-      expect(createCall.password).toBe('hashed_password123');
+      expect(createCall.password).toBe('hashed_Password123!');
     });
 
     it('should set role to user by default', async () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(undefined);
       vi.mocked(mockRepository.create).mockResolvedValue(mockUser);
 
-      await service.register(registerDto);
+      await service.register(registerDto, mockRequest);
 
       const createCall = vi.mocked(mockRepository.create).mock.calls[0][0];
       expect(createCall.role).toBe('user');
@@ -97,7 +115,7 @@ describe('AuthService', () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(undefined);
       vi.mocked(mockRepository.create).mockResolvedValue(mockUser);
 
-      await service.register(dtoWithoutDisplay);
+      await service.register(dtoWithoutDisplay, mockRequest);
 
       const createCall = vi.mocked(mockRepository.create).mock.calls[0][0];
       expect(createCall.displayName).toBeNull();
@@ -107,7 +125,7 @@ describe('AuthService', () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(undefined);
       vi.mocked(mockRepository.create).mockResolvedValue(mockUser);
 
-      const result = await service.register(registerDto);
+      const result = await service.register(registerDto, mockRequest);
 
       expect(result.user).not.toHaveProperty('password');
       expect(result.user).toHaveProperty('id');
@@ -119,31 +137,32 @@ describe('AuthService', () => {
   describe('login', () => {
     const loginDto: LoginDto = {
       username: 'testuser',
-      password: 'password123',
+      password: 'Password123!',
     };
 
     it('should successfully login with correct credentials', async () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(mockUser);
 
-      const result = await service.login(loginDto);
+      const result = await service.login(loginDto, mockRequest);
 
       expect(result).toBeDefined();
       expect(result.user.username).toBe(mockUser.username);
-      expect(result.token).toBe('mock-jwt-token');
+      expect(result.token).toBe('mock-access-token');
+      expect(result.refreshToken).toBe('mock-refresh-token');
       expect(mockRepository.findByUsername).toHaveBeenCalledWith(loginDto.username);
     });
 
     it('should throw error if user not found', async () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(undefined);
 
-      await expect(service.login(loginDto)).rejects.toThrow('Invalid username or password');
+      await expect(service.login(loginDto, mockRequest)).rejects.toThrow('Invalid username or password');
     });
 
     it('should throw error if password is incorrect', async () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(mockUser);
-      const wrongPasswordDto = { ...loginDto, password: 'wrongpassword' };
+      const wrongPasswordDto = { ...loginDto, password: 'Wrongpassword1!' };
 
-      await expect(service.login(wrongPasswordDto)).rejects.toThrow(
+      await expect(service.login(wrongPasswordDto, mockRequest)).rejects.toThrow(
         'Invalid username or password'
       );
     });
@@ -151,7 +170,7 @@ describe('AuthService', () => {
     it('should return user without password', async () => {
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(mockUser);
 
-      const result = await service.login(loginDto);
+      const result = await service.login(loginDto, mockRequest);
 
       expect(result.user).not.toHaveProperty('password');
     });
@@ -159,12 +178,12 @@ describe('AuthService', () => {
     it('should not reveal if username or password was wrong', async () => {
       // Test username wrong
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(undefined);
-      const usernameError = service.login(loginDto).catch((e) => e);
+      const usernameError = service.login(loginDto, mockRequest).catch((e) => e);
 
       // Test password wrong
       vi.mocked(mockRepository.findByUsername).mockResolvedValue(mockUser);
       const passwordError = service
-        .login({ ...loginDto, password: 'wrong' })
+        .login({ ...loginDto, password: 'WrongPassword1!' }, mockRequest)
         .catch((e) => e);
 
       const [error1, error2] = await Promise.all([usernameError, passwordError]);
@@ -210,7 +229,7 @@ describe('AuthService', () => {
     it('should handle complete registration flow', async () => {
       const registerDto: RegisterDto = {
         username: 'alice',
-        password: 'alicePass123',
+        password: 'AlicePass123!',
         fullName: 'Alice Smith',
       };
 
@@ -221,17 +240,18 @@ describe('AuthService', () => {
         fullName: registerDto.fullName,
       });
 
-      const result = await service.register(registerDto);
+      const result = await service.register(registerDto, mockRequest);
 
       expect(result.user.username).toBe(registerDto.username);
       expect(result.user.fullName).toBe(registerDto.fullName);
       expect(result.token).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
     });
 
     it('should handle complete login flow after registration', async () => {
       const registerDto: RegisterDto = {
         username: 'bob',
-        password: 'bobPass123',
+        password: 'BobPass123!',
         fullName: 'Bob Jones',
       };
 
@@ -240,16 +260,16 @@ describe('AuthService', () => {
       vi.mocked(mockRepository.create).mockResolvedValue({
         ...mockUser,
         username: registerDto.username,
-        password: 'hashed_bobPass123',
+        password: 'hashed_BobPass123!',
       });
 
-      await service.register(registerDto);
+      await service.register(registerDto, mockRequest);
 
       // Login
       vi.mocked(mockRepository.findByUsername).mockResolvedValue({
         ...mockUser,
         username: registerDto.username,
-        password: 'hashed_bobPass123',
+        password: 'hashed_BobPass123!',
       });
 
       const loginDto: LoginDto = {
@@ -257,10 +277,11 @@ describe('AuthService', () => {
         password: registerDto.password,
       };
 
-      const loginResult = await service.login(loginDto);
+      const loginResult = await service.login(loginDto, mockRequest);
 
       expect(loginResult.user.username).toBe(registerDto.username);
       expect(loginResult.token).toBeDefined();
+      expect(loginResult.refreshToken).toBeDefined();
     });
   });
 });
