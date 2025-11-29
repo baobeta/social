@@ -6,8 +6,8 @@ import type { Request, Response } from 'express';
  * Prevents brute force attacks on login/register
  */
 export const authRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window
+  windowMs: 1 * 60 * 1000, // 1 minutes
+  max: 30, // 30 attempts per window
   message: {
     success: false,
     error: 'Too many authentication attempts. Please try again in 15 minutes.',
@@ -35,7 +35,7 @@ export const authRateLimit = rateLimit({
  * Standard rate limiting for API endpoints
  */
 export const apiRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 1 * 60 * 1000, // 15 minutes
   max: 100, // 100 requests per window
   message: {
     success: false,
@@ -66,7 +66,7 @@ export const passwordResetRateLimit = rateLimit({
  */
 export const contentCreationRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 posts/comments per minute
+  max: 30, // 30 posts/comments per minute
   message: {
     success: false,
     error: 'You are creating content too quickly. Please slow down.',
