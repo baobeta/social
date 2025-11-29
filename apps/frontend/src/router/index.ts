@@ -5,6 +5,14 @@ import { useAuthStore } from '@/stores/auth';
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
+    name: 'root',
+    redirect: () => {
+      const authStore = useAuthStore();
+      return authStore.isAuthenticated ? '/timeline' : '/home';
+    },
+  },
+  {
+    path: '/home',
     name: 'home',
     component: () => import('@/views/HomeView.vue'),
     meta: {
@@ -67,24 +75,28 @@ router.beforeEach(async (to, _from, next) => {
   document.title = (to.meta.title as string) || 'Social Media App';
 
   const authStore = useAuthStore();
+  const requiresAuth = to.meta.requiresAuth;
 
-  // Try to fetch current user if not already loaded
+  // Only try to fetch current user if:
+  // 1. Route requires authentication, OR
+  // 2. User data is not loaded yet AND we're not going to a public route
   if (!authStore.user && !authStore.loading) {
-    try {
-      await authStore.fetchCurrentUser();
-    } catch (error) {
-      // User not authenticated
+    if (requiresAuth || (to.name !== 'login' && to.name !== 'register' && to.name !== 'home')) {
+      try {
+        await authStore.fetchCurrentUser();
+      } catch (error) {
+        // User not authenticated
+      }
     }
   }
 
-  const requiresAuth = to.meta.requiresAuth;
   const isAuthenticated = authStore.isAuthenticated;
 
   if (requiresAuth && !isAuthenticated) {
     // Redirect to login if route requires auth and user is not authenticated
     next({ name: 'login', query: { redirect: to.fullPath } });
-  } else if (!requiresAuth && isAuthenticated && (to.name === 'login' || to.name === 'register')) {
-    // Redirect to timeline if user is authenticated and tries to access login/register
+  } else if (!requiresAuth && isAuthenticated && (to.name === 'login' || to.name === 'register' || to.name === 'home')) {
+    // Redirect to timeline if user is authenticated and tries to access login/register/home
     next({ name: 'timeline' });
   } else {
     next();
