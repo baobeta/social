@@ -2,7 +2,7 @@
   <div class="flex items-center gap-3">
     <Avatar :full-name="fullName" size="md" />
     <div class="hidden sm:block">
-      <p class="text-sm font-medium text-gray-900">
+      <p data-ci="user-display-name" class="text-sm font-medium text-gray-900">
         {{ fullName }}
       </p>
       <div class="flex items-center gap-2 text-xs text-gray-500">

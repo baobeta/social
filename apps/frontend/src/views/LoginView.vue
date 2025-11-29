@@ -13,7 +13,7 @@
     <template #footer>
       <p class="text-sm text-gray-600">
         Don't have an account?
-        <RouterLink to="/register" class="font-medium text-green-600 hover:text-green-700">
+        <RouterLink data-ci="nav-register-link" to="/register" class="font-medium text-green-600 hover:text-green-700">
           Sign up
         </RouterLink>
       </p>

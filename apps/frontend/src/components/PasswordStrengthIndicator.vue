@@ -17,7 +17,9 @@
     </div>
 
     <!-- Error messages -->
-    <ul v-if="strength.errors.length > 0" class="text-xs text-gray-600 space-y-1">
+    <ul v-if="strength.errors.length > 0" class="text-xs text-gray-600 space-y-1" 
+      data-ci="register-error-message-password-strength"
+    >
       <li v-for="(error, index) in strength.errors" :key="index" class="flex items-start">
         <svg class="w-3 h-3 mr-1 mt-0.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
           <path

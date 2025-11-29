@@ -3,6 +3,7 @@
     <!-- Error Message with Icon -->
     <div
       v-if="error"
+      data-ci="register-error-message"
       class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700"
     >
       <i class="pi pi-exclamation-circle text-red-500 mt-0.5"></i>
@@ -17,6 +18,7 @@
       <div class="relative">
         <i v-if="!modelValue.fullName" class="pi pi-id-card absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
         <InputText
+          data-ci="register-fullname-input"
           id="fullName"
           :model-value="modelValue.fullName"
           @update:model-value="updateField('fullName', $event)"
@@ -28,6 +30,29 @@
       </div>
     </div>
 
+    <!-- Display Name Field -->
+    <div class="space-y-2">
+      <label for="displayName" class="block text-sm font-semibold text-gray-700">
+        Display Name
+      </label>
+      <div class="relative">
+        <i v-if="!modelValue.displayName" class="pi pi-user-edit absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <InputText
+          data-ci="register-displayname-input"
+          id="displayName"
+          :model-value="modelValue.displayName"
+          @update:model-value="updateField('displayName', $event)"
+          type="text"
+          placeholder="        Enter your display name (optional)"
+          class="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-0 transition-colors"
+        />
+      </div>
+      <small class="flex items-center gap-1 text-gray-500">
+        <i class="pi pi-info-circle text-xs"></i>
+        Optional: How you want others to see your name
+      </small>
+    </div>
+
     <!-- Username Field -->
     <div class="space-y-2">
       <label for="username" class="block text-sm font-semibold text-gray-700">
@@ -36,6 +61,7 @@
       <div class="relative">
         <i v-if="!modelValue.username" class="pi pi-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
         <InputText
+          data-ci="register-username-input"
           id="username"
           :model-value="modelValue.username"
           @update:model-value="updateField('username', $event)"
@@ -67,6 +93,7 @@
         <i class="pi pi-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10"></i>
         <Password
           id="password"
+          data-ci="register-password-input"
           :model-value="modelValue.password"
           @update:model-value="updateField('password', $event)"
           required
@@ -89,6 +116,7 @@
         <i class="pi pi-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10"></i>
         <Password
           id="confirmPassword"
+          data-ci="register-re-password-input"
           :model-value="confirmPassword"
           @update:model-value="emit('update:confirmPassword', $event)"
           required
@@ -135,6 +163,7 @@
 
     <!-- Submit Button -->
     <Button
+      data-ci="register-submit-button"
       type="submit"
       :disabled="loading || !isValid"
       :loading="loading"

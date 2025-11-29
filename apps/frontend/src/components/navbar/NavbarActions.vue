@@ -11,6 +11,7 @@
       aria-label="View profile"
     />
     <Button
+      data-ci="nav-logout-button"
       icon="pi pi-sign-out"
       rounded
       text

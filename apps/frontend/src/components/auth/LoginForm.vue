@@ -3,6 +3,7 @@
     <!-- Error Message with Icon -->
     <div
       v-if="error"
+      data-ci="login-error-message"
       class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700"
     >
       <i class="pi pi-exclamation-circle text-red-500 mt-0.5"></i>
@@ -18,6 +19,7 @@
         <i v-if="!username" class="pi pi-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
         <InputText
           id="username"
+          data-ci="login-username-input"
           v-model="username"
           type="text"
           required
@@ -47,6 +49,7 @@
         <i class="pi pi-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10"></i>
         <Password
           id="password"
+          data-ci="login-password-input"
           v-model="password"
           required
           placeholder="Enter your password"
@@ -60,6 +63,7 @@
 
     <!-- Submit Button -->
     <Button
+      data-ci="login-submit-button"
       type="submit"
       :disabled="loading"
       :loading="loading"

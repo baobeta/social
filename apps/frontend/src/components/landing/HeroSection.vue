@@ -28,6 +28,7 @@
     <div class="flex flex-wrap gap-4 justify-center">
       <Button
         label="Start Posting Free"
+        data-ci="nav-register-link"
         icon="pi pi-arrow-right"
         iconPos="right"
         @click="$emit('get-started')"
