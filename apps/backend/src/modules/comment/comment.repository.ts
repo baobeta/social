@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, isNull } from 'drizzle-orm';
+import { eq, desc, and, sql, isNull, inArray } from 'drizzle-orm';
 import { db as defaultDb } from '../../db/index.js';
 import { comments, users, type Comment, type NewComment } from '../../db/schema/index.js';
 import type { drizzle } from 'drizzle-orm/postgres-js';
@@ -159,6 +159,46 @@ export class CommentRepository {
       );
 
     return result[0]?.count ?? 0;
+  }
+
+  /**
+   * Count comments for multiple posts in a single query (prevents N+1)
+   * @param postIds - Array of post IDs
+   * @returns Map of postId to comment count
+   */
+  async countByPostIds(postIds: string[]): Promise<Map<string, number>> {
+    if (postIds.length === 0) {
+      return new Map();
+    }
+
+    const results = await this.db
+      .select({
+        postId: comments.postId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(comments)
+      .where(
+        and(
+          inArray(comments.postId, postIds),
+          eq(comments.isDeleted, false),
+          isNull(comments.parentCommentId)
+        )
+      )
+      .groupBy(comments.postId);
+
+    const countMap = new Map<string, number>();
+    for (const result of results) {
+      countMap.set(result.postId, result.count);
+    }
+
+    // Ensure all postIds are in the map, even if they have 0 comments
+    for (const postId of postIds) {
+      if (!countMap.has(postId)) {
+        countMap.set(postId, 0);
+      }
+    }
+
+    return countMap;
   }
 
   /**

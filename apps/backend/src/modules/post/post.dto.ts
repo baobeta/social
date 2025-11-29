@@ -83,7 +83,7 @@ export interface PostResponse {
   editedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  // commentCount: number; // TODO: Add when comment feature is implemented
+  commentsCount: number;
 }
 
 export interface CreatePostResponse {

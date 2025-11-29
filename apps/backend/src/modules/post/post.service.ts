@@ -1,4 +1,5 @@
 import { PostRepository } from './post.repository.js';
+import { CommentRepository } from '../comment/comment.repository.js';
 import type {
   CreatePostDto,
   UpdatePostDto,
@@ -17,12 +18,17 @@ import { cacheService } from '../../lib/cache.js';
  */
 export class PostService {
   private repository: PostRepository;
+  private commentRepository: CommentRepository;
   private readonly CACHE_TTL = 300; // 5 minutes
   private readonly POST_CACHE_PREFIX = 'post:';
   private readonly TIMELINE_CACHE_PREFIX = 'timeline:';
 
-  constructor(repository: PostRepository = new PostRepository()) {
+  constructor(
+    repository: PostRepository = new PostRepository(),
+    commentRepository: CommentRepository = new CommentRepository()
+  ) {
     this.repository = repository;
+    this.commentRepository = commentRepository;
   }
 
   /**
@@ -83,6 +89,7 @@ export class PostService {
         editedAt: postWithAuthor.editedAt,
         createdAt: postWithAuthor.createdAt,
         updatedAt: postWithAuthor.updatedAt,
+        commentsCount: 0, // New posts have 0 comments
       },
     };
 
@@ -122,6 +129,11 @@ export class PostService {
       this.repository.countTimeline(),
     ]);
 
+    // Get comment counts for all posts in a single query (prevents N+1)
+    const postIds = postsData.map(post => post.id);
+    const commentCounts = await this.commentRepository.countByPostIds(postIds);
+
+    // Map posts with their comment counts
     const posts: PostResponse[] = postsData.map((post) => ({
       id: post.id,
       content: post.content,
@@ -131,6 +143,7 @@ export class PostService {
       editedAt: post.editedAt,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
+      commentsCount: commentCounts.get(post.id) ?? 0,
     }));
 
     const response = {
@@ -174,6 +187,8 @@ export class PostService {
       throw new Error('Post has been deleted');
     }
 
+    const commentsCount = await this.commentRepository.countByPostId(postId);
+
     const postResponse = {
       id: post.id,
       content: post.content,
@@ -183,6 +198,7 @@ export class PostService {
       editedAt: post.editedAt,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
+      commentsCount,
     };
 
     // Store in cache for future requests
@@ -231,6 +247,8 @@ export class PostService {
       throw new Error('Failed to retrieve updated post');
     }
 
+    const commentsCount = await this.commentRepository.countByPostId(postId);
+
     const response = {
       post: {
         id: updatedPost.id,
@@ -241,6 +259,7 @@ export class PostService {
         editedAt: updatedPost.editedAt,
         createdAt: updatedPost.createdAt,
         updatedAt: updatedPost.updatedAt,
+        commentsCount,
       },
     };
 
@@ -307,6 +326,11 @@ export class PostService {
 
     const postsData = await this.repository.getByAuthor(authorId, safeLimit, safeOffset);
 
+    // Get comment counts for all posts in a single query (prevents N+1)
+    const postIds = postsData.map(post => post.id);
+    const commentCounts = await this.commentRepository.countByPostIds(postIds);
+
+    // Map posts with their comment counts
     const posts: PostResponse[] = postsData.map((post) => ({
       id: post.id,
       content: post.content,
@@ -316,6 +340,7 @@ export class PostService {
       editedAt: post.editedAt,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
+      commentsCount: commentCounts.get(post.id) ?? 0,
     }));
 
     return {
