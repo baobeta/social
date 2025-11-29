@@ -5,7 +5,6 @@
       <InputText
         :model-value="modelValue"
         @update:model-value="(value) => emit('update:modelValue', value as string)"
-        @input="emit('search')"
         type="text"
         placeholder="Search posts by text or username..."
         class="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-0 transition-colors bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md"
@@ -27,6 +26,5 @@ defineProps<Props>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: string];
-  search: [];
 }>();
 </script>

@@ -5,7 +5,6 @@
     <div class="max-w-3xl mx-auto px-6 py-section">
       <SearchBar
         v-model="searchQuery"
-        @search="handleSearch"
       />
 
       <CreatePostForm
@@ -59,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import { useAuthStore } from '@/stores/auth';
 import type { Post, Comment, PaginationMeta } from '@/types/post';
@@ -257,10 +256,6 @@ const debouncedSearch = useDebounceFn(async () => {
   }
 }, 500);
 
-function handleSearch() {
-  debouncedSearch();
-}
-
 async function handleCreatePost() {
   if (!newPostContent.value.trim()) return;
 
@@ -325,6 +320,11 @@ function handleLoadMore() {
     loadPosts(true);
   }
 }
+
+// Watch for search query changes and trigger debounced search
+watch(searchQuery, () => {
+  debouncedSearch();
+});
 
 onMounted(async () => {
   await loadPosts(false);
