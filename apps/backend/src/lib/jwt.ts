@@ -10,7 +10,7 @@ import type { TokenPayload } from '../modules/auth/auth.dto.ts';
  */
 export function generateAccessToken(payload: TokenPayload): string {
   return jwt.sign(payload, config.auth.jwtSecret, {
-    expiresIn: '15m', // Short-lived access token
+    expiresIn: '30m', // Short-lived access token
   });
 }
 
