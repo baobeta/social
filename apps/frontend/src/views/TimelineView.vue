@@ -60,6 +60,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import { useAuthStore } from '@/stores/auth';
 import type { Post, Comment, PaginationMeta } from '@/types/post';
 import * as postsService from '@/services/posts.ajax';
@@ -236,7 +237,8 @@ async function loadComments(postId: string, append: boolean = false) {
   }
 }
 
-async function handleSearch() {
+// Debounced search function
+const debouncedSearch = useDebounceFn(async () => {
   if (!searchQuery.value.trim()) {
     await loadPosts(false);
     return;
@@ -253,6 +255,10 @@ async function handleSearch() {
   } finally {
     loading.value = false;
   }
+}, 500);
+
+function handleSearch() {
+  debouncedSearch();
 }
 
 async function handleCreatePost() {
