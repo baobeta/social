@@ -1,58 +1,105 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-    <div class="max-w-md w-full">
-      <div class="text-center mb-8">
-        <h1 class="text-5xl font-bold text-gray-900 mb-2">Social</h1>
-        <p class="text-xl text-gray-600">Connect, Share, Engage</p>
+  <div
+    class="min-h-screen bg-gradient-to-br from-white via-green-50 to-emerald-100 overflow-x-hidden"
+    @mousemove="handleMouseMove"
+  >
+    <!-- Background Effects -->
+    <BackgroundEffects :mouse-pos="mousePos" />
+
+    <!-- Navigation -->
+    <LandingNavbar
+      :active-users="activeUsers"
+      :is-authenticated="authStore.isAuthenticated"
+      @sign-in="handleSignIn"
+      @sign-out="handleSignOut"
+    />
+
+    <!-- Main Content -->
+    <main class="relative z-10 px-8 py-16">
+      <div class="max-w-6xl mx-auto">
+        <!-- Hero Section -->
+        <HeroSection
+          @get-started="handleGetStarted"
+        />
+
+        <!-- Features Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          <FeatureCard
+            v-for="(feature, index) in features"
+            :key="index"
+            :icon="feature.icon"
+            :title="feature.title"
+            :description="feature.desc"
+            :is-hovered="hoveredCard === index"
+            @hover="(isHovered) => hoveredCard = isHovered ? index : null"
+          />
+        </div>
+
+        <!-- Final CTA -->
+        <FinalCTA
+          :active-users="activeUsers"
+          @get-started="handleGetStarted"
+        />
       </div>
-
-      <div class="bg-white rounded-lg shadow-xl p-8 space-y-6">
-        <div class="text-center">
-          <h2 class="text-2xl font-semibold text-gray-900 mb-2">
-            Welcome to Social
-          </h2>
-          <p class="text-gray-600">
-            Join our community to share your thoughts and connect with others.
-          </p>
-        </div>
-
-        <div class="space-y-3">
-          <RouterLink
-            to="/login"
-            class="block w-full px-6 py-3 text-center text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
-          >
-            Sign In
-          </RouterLink>
-
-          <RouterLink
-            to="/register"
-            class="block w-full px-6 py-3 text-center text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg font-medium transition-colors"
-          >
-            Create Account
-          </RouterLink>
-        </div>
-
-        <div class="pt-6 border-t border-gray-200">
-          <div class="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div class="text-2xl font-bold text-blue-600">Share</div>
-              <div class="text-xs text-gray-500 mt-1">Your thoughts</div>
-            </div>
-            <div>
-              <div class="text-2xl font-bold text-blue-600">Connect</div>
-              <div class="text-xs text-gray-500 mt-1">With others</div>
-            </div>
-            <div>
-              <div class="text-2xl font-bold text-blue-600">Engage</div>
-              <div class="text-xs text-gray-500 mt-1">In discussions</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router';
+import { ref, reactive, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import BackgroundEffects from '@/components/landing/BackgroundEffects.vue';
+import LandingNavbar from '@/components/landing/LandingNavbar.vue';
+import HeroSection from '@/components/landing/HeroSection.vue';
+import FeatureCard from '@/components/landing/FeatureCard.vue';
+import FinalCTA from '@/components/landing/FinalCTA.vue';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+const activeUsers = ref(12847);
+const hoveredCard = ref<number | null>(null);
+const mousePos = reactive({ x: 0, y: 0 });
+
+const features = [
+  { icon: 'pi pi-users', title: 'Real-time Collaboration', desc: 'Connect with thousands instantly' },
+  { icon: 'pi pi-bolt', title: 'Lightning Fast', desc: 'Posts sync in milliseconds' },
+  { icon: 'pi pi-globe', title: 'Global Community', desc: 'Join creators worldwide' },
+];
+
+let interval: ReturnType<typeof setInterval>;
+
+onMounted(() => {
+  interval = setInterval(() => {
+    activeUsers.value += Math.floor(Math.random() * 5) - 2;
+  }, 2000);
+});
+
+onUnmounted(() => {
+  clearInterval(interval);
+});
+
+function handleMouseMove(e: MouseEvent) {
+  mousePos.x = e.clientX;
+  mousePos.y = e.clientY;
+}
+
+function handleSignIn() {
+  router.push('/login');
+}
+
+async function handleSignOut() {
+  await authStore.logout();
+  router.push('/');
+}
+
+function handleGetStarted() {
+  if (authStore.isAuthenticated) {
+    router.push('/timeline');
+  } else {
+    router.push('/register');
+  }
+}
+
 </script>
