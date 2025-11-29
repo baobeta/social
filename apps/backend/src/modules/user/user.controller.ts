@@ -75,7 +75,7 @@ export class UserController {
       const data = validationResult.data;
 
       // Update profile
-      const result = await this.service.updateProfile(req.user.userId, data);
+      const result = await this.service.updateProfile(req.user, req.user.userId, data);
 
       logger.info(
         { userId: req.user.userId, updates: Object.keys(data) },

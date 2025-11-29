@@ -17,10 +17,10 @@
             <span>@{{ post.author.username }}</span>
             <span class="text-gray-300">•</span>
             <span>{{ formatDate(post.createdAt) }}</span>
-            <span v-if="post.updatedAt !== post.createdAt && post.editedByAdmin" class="text-purple-600">
+            <span v-if="post.editedByAdmin" class="text-purple-600">
               • Edited by admin
             </span>
-            <span v-else-if="post.updatedAt !== post.createdAt" class="text-gray-500">
+            <span v-else-if="post.isEdited" class="text-gray-500">
               • Edited
             </span>
           </div>

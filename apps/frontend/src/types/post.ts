@@ -10,6 +10,8 @@ export interface Post {
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  isEdited: boolean;
+  editedAt: string | null;
   editedByAdmin: boolean;
   replies?: Post[];
   commentsCount?: number;

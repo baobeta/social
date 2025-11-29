@@ -40,6 +40,7 @@ export class PostRepository {
           username: string;
           fullName: string;
           displayName: string | null;
+          role: string;
         };
       })
     | undefined
@@ -65,6 +66,7 @@ export class PostRepository {
           username: users.username,
           fullName: users.fullName,
           displayName: users.displayName,
+          role: users.role,
         },
       })
       .from(posts)
@@ -94,6 +96,7 @@ export class PostRepository {
           username: string;
           fullName: string;
           displayName: string | null;
+          role: string;
         };
       }
     >
@@ -119,6 +122,7 @@ export class PostRepository {
           username: users.username,
           fullName: users.fullName,
           displayName: users.displayName,
+          role: users.role,
         },
       })
       .from(posts)
@@ -207,6 +211,7 @@ export class PostRepository {
           username: string;
           fullName: string;
           displayName: string | null;
+          role: string;
         };
       }
     >
@@ -232,6 +237,7 @@ export class PostRepository {
           username: users.username,
           fullName: users.fullName,
           displayName: users.displayName,
+          role: users.role,
         },
       })
       .from(posts)

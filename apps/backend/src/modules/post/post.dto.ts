@@ -71,6 +71,7 @@ export interface PostAuthor {
   username: string;
   fullName: string;
   displayName: string | null;
+  role: string;
   // avatar: string | null; // TODO: Add when avatar feature is implemented
 }
 
@@ -81,6 +82,7 @@ export interface PostResponse {
   isDeleted: boolean;
   isEdited: boolean;
   editedAt: Date | null;
+  editedByAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
   commentsCount: number;
