@@ -1,50 +1,55 @@
 <template>
-  <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
+  <nav class="bg-surface-card border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      <div class="flex justify-between items-center h-20">
+        <!-- Brand -->
         <div class="flex items-center">
-          <RouterLink to="/timeline" class="text-xl font-bold text-gray-900">
+          <RouterLink to="/timeline" class="text-2xl font-bold text-primary-500 hover:text-primary-600 transition-colors">
             Social
           </RouterLink>
         </div>
 
-        <div class="flex items-center gap-4">
+        <!-- User Info & Actions -->
+        <div class="flex items-center gap-6">
+          <!-- User Info -->
           <div class="flex items-center gap-3">
-            <Avatar :full-name="authStore.user!.fullName" size="sm" />
+            <Avatar :full-name="authStore.user!.fullName" size="md" />
             <div class="hidden sm:block">
-              <p class="text-sm font-medium text-gray-900">
+              <p class="text-sm font-semibold text-gray-900">
                 {{ authStore.user!.fullName }}
               </p>
-              <div class="flex items-center gap-1 text-xs text-gray-500">
+              <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                <span v-if="authStore.isAdmin" class="font-medium text-primary-600">Admin</span>
+                <span v-if="authStore.isAdmin" class="text-gray-300">•</span>
                 <span>@{{ authStore.user!.username }}</span>
-                <Tag
-                  v-if="authStore.isAdmin"
-                  value="Admin"
-                  severity="secondary"
-                  size="small"
-                />
               </div>
             </div>
           </div>
 
-          <Button
-            label="Profile"
-            size="small"
-            text
-            icon="pi pi-user"
-            @click="$router.push('/profile')"
-          />
+          <!-- Action Icons -->
+          <div class="flex items-center gap-2">
+            <Button
+              icon="pi pi-user"
+              rounded
+              text
+              severity="secondary"
+              aria-label="Profile"
+              @click="$router.push('/profile')"
+              class="hover:bg-gray-100"
+            />
 
-          <Button
-            label="Logout"
-            size="small"
-            severity="danger"
-            text
-            icon="pi pi-sign-out"
-            @click="handleLogout"
-            :disabled="authStore.loading"
-            :loading="authStore.loading"
-          />
+            <Button
+              icon="pi pi-sign-out"
+              rounded
+              text
+              severity="danger"
+              aria-label="Logout"
+              @click="handleLogout"
+              :disabled="authStore.loading"
+              :loading="authStore.loading"
+              class="hover:bg-red-50"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -56,7 +61,6 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import Avatar from './Avatar.vue';
 import Button from 'primevue/button';
-import Tag from 'primevue/tag';
 
 const authStore = useAuthStore();
 const router = useRouter();

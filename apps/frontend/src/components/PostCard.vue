@@ -1,89 +1,121 @@
 <template>
   <div
     :class="[
-      'bg-white rounded-lg border p-4',
-      post.isDeleted ? 'border-red-200 bg-red-50' : 'border-gray-200',
+      'bg-surface-card rounded-card border shadow-card hover:shadow-card-hover transition-shadow',
+      post.isDeleted ? 'border-red-200 bg-red-50' : 'border-gray-100',
     ]"
   >
-    <div class="flex space-x-3">
-      <Avatar :full-name="post.author.fullName" size="md" />
+    <!-- Post Header -->
+    <div class="flex items-start gap-3 p-card">
+      <Avatar :full-name="post.author.fullName" size="sm" />
 
       <div class="flex-1 min-w-0">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <p class="text-sm font-semibold text-gray-900">
-              {{ post.author.fullName }}
-            </p>
-            <p class="text-sm text-gray-500">@{{ post.author.username }}</p>
-            <Tag
-              v-if="post.author.role === 'admin'"
-              value="Admin"
+          <div>
+            <div class="flex items-center gap-2">
+              <p class="text-sm font-semibold text-gray-900">
+                {{ post.author.fullName }}
+              </p>
+              <span v-if="post.author.role === 'admin'" class="text-xs font-medium text-primary-600">
+                Admin
+              </span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+              <span>@{{ post.author.username }}</span>
+              <span class="text-gray-300">•</span>
+              <span>{{ formatDate(post.createdAt) }}</span>
+              <span v-if="post.updatedAt !== post.createdAt && post.editedByAdmin" class="text-purple-600">
+                • Edited by admin
+              </span>
+              <span v-else-if="post.updatedAt !== post.createdAt" class="text-gray-500">
+                • Edited
+              </span>
+            </div>
+          </div>
+
+          <!-- Three-dot menu for Edit/Delete -->
+          <div v-if="canEdit || canDelete" class="relative">
+            <Button
+              icon="pi pi-ellipsis-v"
+              rounded
+              text
               severity="secondary"
-            />
-            <Tag
-              v-if="post.isDeleted"
-              value="Deleted"
-              severity="danger"
-            />
-          </div>
-
-          <div class="flex items-center gap-2">
-            <Button
-              v-if="canEdit"
-              label="Edit"
               size="small"
-              text
-              severity="primary"
-              @click="$emit('edit', post)"
+              @click="toggleMenu"
               :disabled="loading"
+              class="hover:bg-gray-100"
+              aria-label="Post actions"
             />
-            <Button
-              v-if="canDelete"
-              label="Delete"
-              size="small"
-              text
-              severity="danger"
-              @click="handleDelete"
-              :disabled="loading"
-            />
+            <div
+              v-if="menuVisible"
+              class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10"
+            >
+              <button
+                v-if="canEdit"
+                @click="handleEdit"
+                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <i class="pi pi-pencil text-xs"></i>
+                Edit
+              </button>
+              <button
+                v-if="canDelete"
+                @click="handleDelete"
+                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+              >
+                <i class="pi pi-trash text-xs"></i>
+                Delete
+              </button>
+            </div>
           </div>
         </div>
 
-        <p class="mt-2 text-sm text-gray-900 whitespace-pre-wrap">
-          {{ post.content }}
-        </p>
-
-        <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
-          <span>{{ formatDate(post.createdAt) }}</span>
-          <span v-if="post.updatedAt !== post.createdAt" class="flex items-center space-x-1">
-            <span>•</span>
-            <span v-if="post.editedByAdmin" class="text-purple-600">
-              Edited by admin
-            </span>
-            <span v-else>Edited</span>
-          </span>
-        </div>
-
-        <div v-if="showComments" class="mt-4">
-          <Button
-            :label="`${commentsExpanded ? 'Hide' : 'Show'} comments${post.commentsCount ? ` (${post.commentsCount})` : ''}`"
-            size="small"
-            text
-            icon="pi pi-comment"
-            @click="toggleComments"
-          />
-
-          <div v-if="commentsExpanded" class="mt-3">
-            <slot name="comments"></slot>
-          </div>
-        </div>
+        <Tag
+          v-if="post.isDeleted"
+          value="Deleted"
+          severity="danger"
+          class="mt-2"
+        />
       </div>
+    </div>
+
+    <!-- Post Content -->
+    <div class="px-card pb-card">
+      <p class="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+        {{ post.content }}
+      </p>
+    </div>
+
+    <!-- Social Actions Footer -->
+    <div v-if="showComments" class="border-t border-gray-100 px-card py-3 flex items-center justify-between">
+      <button
+        @click="toggleComments"
+        class="flex items-center gap-2 text-sm text-gray-600 hover:text-primary-500 transition-colors"
+      >
+        <i class="pi pi-comment"></i>
+        <span class="font-medium">{{ post.commentsCount || 0 }}</span>
+      </button>
+
+      <button
+        @click="toggleComments"
+        :class="[
+          'text-sm font-medium transition-colors',
+          commentsExpanded ? 'text-gray-600 hover:text-gray-700' : 'text-primary-500 hover:text-primary-600'
+        ]"
+      >
+        {{ commentsExpanded ? 'Hide comments' : 'Show comments' }}
+      </button>
+    </div>
+
+    <!-- Comments Section -->
+    <div v-if="showComments && commentsExpanded" class="border-t border-gray-100">
+      <slot name="comments"></slot>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useConfirm } from 'primevue/useconfirm';
 import type { Post } from '@/types/post';
@@ -111,6 +143,7 @@ const emit = defineEmits<{
 const authStore = useAuthStore();
 const confirm = useConfirm();
 const commentsExpanded = ref(false);
+const menuVisible = ref(false);
 
 const canEdit = computed(() => {
   if (!authStore.user) return false;
@@ -128,12 +161,26 @@ const canDelete = computed(() => {
   );
 });
 
+function toggleMenu() {
+  menuVisible.value = !menuVisible.value;
+}
+
+function closeMenu() {
+  menuVisible.value = false;
+}
+
+function handleEdit() {
+  emit('edit', props.post);
+  closeMenu();
+}
+
 function toggleComments() {
   commentsExpanded.value = !commentsExpanded.value;
   emit('toggleComments', props.post.id, commentsExpanded.value);
 }
 
 function handleDelete() {
+  closeMenu();
   confirm.require({
     message: 'Are you sure you want to delete this post?',
     header: 'Delete Confirmation',
@@ -145,6 +192,22 @@ function handleDelete() {
     }
   });
 }
+
+// Close menu when clicking outside
+function handleClickOutside(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  if (menuVisible.value && !target.closest('.relative')) {
+    closeMenu();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);

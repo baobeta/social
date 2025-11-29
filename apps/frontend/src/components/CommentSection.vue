@@ -1,15 +1,15 @@
 <template>
-  <div class="space-y-3">
+  <div class="p-card space-y-4">
     <!-- Add comment form -->
-    <form @submit.prevent="handleSubmit" class="flex gap-2">
+    <form @submit.prevent="handleSubmit" class="flex gap-3">
       <Avatar :full-name="authStore.user!.fullName" size="sm" />
-      <div class="flex-1 flex flex-col gap-2">
+      <div class="flex-1 flex flex-col gap-3">
         <Textarea
           v-model="newComment"
           placeholder="Write a comment..."
           :autoResize="true"
           rows="2"
-          class="w-full text-sm"
+          class="w-full text-sm border-gray-200 focus:border-primary-400 focus:ring-primary-400 rounded-lg"
           :disabled="loading"
         />
         <div class="flex justify-end">
@@ -17,7 +17,7 @@
             type="submit"
             label="Comment"
             size="small"
-            severity="primary"
+            class="bg-primary-500 hover:bg-primary-600 border-primary-500 hover:border-primary-600 px-4 py-2 rounded-button font-medium transition-colors"
             :disabled="!newComment.trim() || loading"
             :loading="loading"
           />
@@ -26,68 +26,87 @@
     </form>
 
     <!-- Comments list -->
-    <div v-if="localComments.length > 0" class="space-y-3 mt-4">
+    <div v-if="localComments.length > 0" class="space-y-3 pt-2">
       <div
         v-for="comment in localComments"
         :key="comment.id"
         :class="[
-          'flex space-x-3 p-3 rounded-lg',
-          comment.isDeleted ? 'bg-red-50 border border-red-200' : 'bg-gray-50',
+          'flex gap-3 p-3 rounded-lg border',
+          comment.isDeleted ? 'bg-red-50 border-red-200' : 'bg-surface border-gray-100',
         ]"
       >
         <Avatar :full-name="comment.author.fullName" size="sm" />
 
         <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <p class="text-sm font-semibold text-gray-900">
-                {{ comment.author.fullName }}
-              </p>
-              <p class="text-xs text-gray-500">@{{ comment.author.username }}</p>
-              <Tag
-                v-if="comment.author.role === 'admin'"
-                value="Admin"
-                severity="secondary"
-                size="small"
-              />
-              <Tag
-                v-if="comment.isDeleted"
-                value="Deleted"
-                severity="danger"
-                size="small"
-              />
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-semibold text-gray-900">
+                  {{ comment.author.fullName }}
+                </p>
+                <span v-if="comment.author.role === 'admin'" class="text-xs font-medium text-primary-600">
+                  Admin
+                </span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                <span>@{{ comment.author.username }}</span>
+                <span class="text-gray-300">•</span>
+                <span>{{ formatDate(comment.createdAt) }}</span>
+                <span v-if="comment.updatedAt !== comment.createdAt && comment.editedByAdmin" class="text-purple-600">
+                  • Edited by admin
+                </span>
+                <span v-else-if="comment.updatedAt !== comment.createdAt">
+                  • Edited
+                </span>
+              </div>
             </div>
 
-            <div class="flex items-center gap-2">
-              <Button
-                v-if="canEdit(comment)"
-                label="Edit"
-                size="small"
-                text
-                severity="primary"
-                @click="startEdit(comment)"
-                :disabled="deletingIds.has(comment.id)"
-              />
-              <Button
-                v-if="canDelete(comment)"
-                label="Delete"
-                size="small"
-                text
-                severity="danger"
-                @click="handleDelete(comment.id)"
-                :disabled="deletingIds.has(comment.id)"
-                :loading="deletingIds.has(comment.id)"
-              />
+            <div v-if="canEdit(comment) || canDelete(comment)" class="flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <Button
+                  v-if="canEdit(comment)"
+                  icon="pi pi-pencil"
+                  rounded
+                  text
+                  size="small"
+                  severity="secondary"
+                  @click="startEdit(comment)"
+                  :disabled="deletingIds.has(comment.id)"
+                  class="hover:bg-gray-100"
+                  aria-label="Edit comment"
+                />
+                <Button
+                  v-if="canDelete(comment)"
+                  icon="pi pi-trash"
+                  rounded
+                  text
+                  size="small"
+                  severity="danger"
+                  @click="handleDelete(comment.id)"
+                  :disabled="deletingIds.has(comment.id)"
+                  :loading="deletingIds.has(comment.id)"
+                  class="hover:bg-red-50"
+                  aria-label="Delete comment"
+                />
+              </div>
             </div>
           </div>
 
+          <Tag
+            v-if="comment.isDeleted"
+            value="Deleted"
+            severity="danger"
+            size="small"
+            class="mt-2"
+          />
+
           <!-- Edit mode -->
-          <div v-if="editingId === comment.id" class="mt-2 flex flex-col gap-2">
+          <div v-if="editingId === comment.id" class="mt-3 flex flex-col gap-3">
             <Textarea
               v-model="editContent"
               :autoResize="true"
               rows="2"
-              class="w-full text-sm"
+              class="w-full text-sm border-gray-200 focus:border-primary-400 focus:ring-primary-400 rounded-lg"
               :disabled="editLoading"
             />
             <div class="flex justify-end gap-2">
@@ -97,11 +116,12 @@
                 severity="secondary"
                 @click="cancelEdit"
                 :disabled="editLoading"
+                class="rounded-button"
               />
               <Button
                 label="Save"
                 size="small"
-                severity="primary"
+                class="bg-primary-500 hover:bg-primary-600 border-primary-500 hover:border-primary-600 rounded-button font-medium transition-colors"
                 @click="saveEdit(comment.id)"
                 :disabled="!editContent.trim() || editLoading"
                 :loading="editLoading"
@@ -110,30 +130,20 @@
           </div>
 
           <!-- Display mode -->
-          <p v-else class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
+          <p v-else class="mt-2 text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
             {{ comment.content }}
           </p>
-
-          <div class="mt-1 flex items-center space-x-3 text-xs text-gray-500">
-            <span>{{ formatDate(comment.createdAt) }}</span>
-            <span v-if="comment.updatedAt !== comment.createdAt" class="flex items-center space-x-1">
-              <span>•</span>
-              <span v-if="comment.editedByAdmin" class="text-purple-600">
-                Edited by admin
-              </span>
-              <span v-else>Edited</span>
-            </span>
-          </div>
         </div>
       </div>
 
       <!-- Load more button -->
-      <div v-if="hasMoreComments" class="flex justify-center py-2">
+      <div v-if="hasMoreComments" class="flex justify-center pt-2">
         <Button
           label="Load more comments"
           size="small"
           text
           icon="pi pi-chevron-down"
+          class="text-primary-500 hover:text-primary-600"
           @click="loadMoreComments"
           :loading="loadingMore"
           :disabled="loadingMore"
@@ -141,7 +151,7 @@
       </div>
     </div>
 
-    <p v-else class="text-sm text-gray-500 text-center py-4">
+    <p v-else class="text-sm text-gray-500 text-center py-6">
       No comments yet. Be the first to comment!
     </p>
   </div>

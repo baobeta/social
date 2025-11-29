@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-surface">
     <Navbar />
 
-    <div class="max-w-2xl mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto px-6 py-section">
       <!-- Search Bar -->
-      <div class="mb-6">
+      <div class="mb-8">
         <IconField iconPosition="left">
           <InputIcon class="pi pi-search" />
           <InputText
@@ -18,14 +18,14 @@
       </div>
 
       <!-- Create Post -->
-      <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <form @submit.prevent="handleCreatePost" class="flex flex-col gap-3">
+      <div class="bg-surface-card rounded-card border border-gray-100 p-6 mb-8 shadow-card hover:shadow-card-hover transition-shadow">
+        <form @submit.prevent="handleCreatePost" class="flex flex-col gap-4">
           <Textarea
             v-model="newPostContent"
             placeholder="What's on your mind?"
             :autoResize="true"
             rows="3"
-            class="w-full"
+            class="w-full border-gray-200 focus:border-primary-400 focus:ring-primary-400 rounded-lg"
             :disabled="createLoading"
           />
           <div class="flex justify-end">
@@ -34,8 +34,7 @@
               :disabled="!newPostContent.trim() || createLoading"
               :loading="createLoading"
               label="Post"
-              size="small"
-              severity="primary"
+              class="bg-primary-500 hover:bg-primary-600 border-primary-500 hover:border-primary-600 px-6 py-2.5 rounded-button font-medium transition-colors"
             />
           </div>
         </form>
@@ -62,7 +61,7 @@
       </div>
 
       <!-- Posts List -->
-      <div v-else-if="displayPosts?.length > 0" class="space-y-4">
+      <div v-else-if="displayPosts?.length > 0" class="space-y-6">
         <PostCard
           v-for="post in displayPosts"
           :key="post.id"
@@ -86,7 +85,7 @@
         </PostCard>
 
         <!-- Infinite Scroll Trigger -->
-        <div ref="loadMoreTrigger" class="py-4 flex justify-center">
+        <div ref="loadMoreTrigger" class="py-6 flex justify-center">
           <ProgressSpinner v-if="loadingMore" style="width: 40px; height: 40px" />
           <p v-else-if="hasMorePosts" class="text-gray-400 text-sm">Scroll for more posts...</p>
           <p v-else class="text-gray-400 text-sm">You've reached the end</p>
