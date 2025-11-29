@@ -3,65 +3,27 @@
     <Navbar />
 
     <div class="max-w-3xl mx-auto px-6 py-section">
-      <!-- Search Bar -->
-      <div class="mb-8">
-        <IconField iconPosition="left">
-          <InputIcon class="pi pi-search" />
-          <InputText
-            v-model="searchQuery"
-            @input="handleSearch"
-            type="text"
-            placeholder="Search posts by text or username..."
-            class="w-full"
-          />
-        </IconField>
-      </div>
+      <SearchBar
+        v-model="searchQuery"
+        @search="handleSearch"
+      />
 
-      <!-- Create Post -->
-      <div class="bg-surface-card rounded-card border border-gray-100 p-6 mb-8 shadow-card hover:shadow-card-hover transition-shadow">
-        <form @submit.prevent="handleCreatePost" class="flex flex-col gap-4">
-          <Textarea
-            v-model="newPostContent"
-            placeholder="What's on your mind?"
-            :autoResize="true"
-            rows="3"
-            class="w-full border-gray-200 focus:border-primary-400 focus:ring-primary-400 rounded-lg"
-            :disabled="createLoading"
-          />
-          <div class="flex justify-end">
-            <Button
-              type="submit"
-              :disabled="!newPostContent.trim() || createLoading"
-              :loading="createLoading"
-              label="Post"
-              class="bg-primary-500 hover:bg-primary-600 border-primary-500 hover:border-primary-600 px-6 py-2.5 rounded-button font-medium transition-colors"
-            />
-          </div>
-        </form>
-      </div>
+      <CreatePostForm
+        v-model="newPostContent"
+        :loading="createLoading"
+        @submit="handleCreatePost"
+      />
 
-      <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center py-12">
-        <ProgressSpinner />
-      </div>
-
-      <!-- Error State -->
-      <div v-else-if="error" class="text-center">
-        <Message severity="error" :closable="false">
-          {{ error }}
-        </Message>
-        <Button
-          @click="() => loadPosts(false)"
-          label="Try again"
-          size="small"
-          severity="danger"
-          text
-          class="mt-2"
-        />
-      </div>
-
-      <!-- Posts List -->
-      <div v-else-if="displayPosts?.length > 0" class="space-y-6">
+      <PostsList
+        :posts="displayPosts"
+        :loading="loading"
+        :loading-more="loadingMore"
+        :error="error"
+        :has-more="hasMorePosts"
+        :empty-message="searchQuery ? 'No posts found matching your search.' : 'No posts yet. Be the first to post!'"
+        @retry="() => loadPosts(false)"
+        @load-more="handleLoadMore"
+      >
         <PostCard
           v-for="post in displayPosts"
           :key="post.id"
@@ -83,89 +45,32 @@
             />
           </template>
         </PostCard>
-
-        <!-- Infinite Scroll Trigger -->
-        <div ref="loadMoreTrigger" class="py-6 flex justify-center">
-          <ProgressSpinner v-if="loadingMore" style="width: 40px; height: 40px" />
-          <p v-else-if="hasMorePosts" class="text-gray-400 text-sm">Scroll for more posts...</p>
-          <p v-else class="text-gray-400 text-sm">You've reached the end</p>
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-else class="text-center py-12">
-        <svg
-          class="mx-auto h-12 w-12 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-        <p class="mt-4 text-gray-500">
-          {{ searchQuery ? 'No posts found matching your search.' : 'No posts yet. Be the first to post!' }}
-        </p>
-      </div>
+      </PostsList>
     </div>
 
-    <!-- Edit Post Dialog -->
-    <Dialog
+    <EditPostDialog
       v-model:visible="isEditDialogVisible"
-      modal
-      header="Edit Post"
-      :style="{ width: '32rem' }"
-      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
-    >
-      <div class="flex flex-col gap-4">
-        <Textarea
-          v-model="editContent"
-          :autoResize="true"
-          rows="4"
-          class="w-full"
-          :disabled="editLoading"
-        />
-      </div>
-      <template #footer>
-        <Button
-          label="Cancel"
-          severity="secondary"
-          @click="cancelEdit"
-          :disabled="editLoading"
-        />
-        <Button
-          label="Save"
-          severity="primary"
-          @click="saveEdit"
-          :disabled="!editContent.trim() || editLoading"
-          :loading="editLoading"
-        />
-      </template>
-    </Dialog>
+      v-model="editContent"
+      :loading="editLoading"
+      @save="saveEdit"
+      @cancel="cancelEdit"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import type { Post, Comment, PaginationMeta } from '@/types/post';
 import * as postsService from '@/services/posts.ajax';
 import * as commentsService from '@/services/comments.ajax';
 import Navbar from '@/components/Navbar.vue';
-import PostCard from '@/components/PostCard.vue';
-import CommentSection from '@/components/CommentSection.vue';
-import InputText from 'primevue/inputtext';
-import IconField from 'primevue/iconfield';
-import InputIcon from 'primevue/inputicon';
-import Textarea from 'primevue/textarea';
-import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
-import ProgressSpinner from 'primevue/progressspinner';
-import Message from 'primevue/message';
+import PostCard from '@/components/posts/PostCard.vue';
+import CommentSection from '@/components/comments/CommentSection.vue';
+import SearchBar from '@/components/timeline/SearchBar.vue';
+import CreatePostForm from '@/components/timeline/CreatePostForm.vue';
+import PostsList from '@/components/timeline/PostsList.vue';
+import EditPostDialog from '@/components/timeline/EditPostDialog.vue';
 
 const authStore = useAuthStore();
 
@@ -186,8 +91,6 @@ const deletingPostId = ref<string | null>(null);
 // Pagination state
 const pagination = ref<PaginationMeta | null>(null);
 const loadingMore = ref(false);
-const loadMoreTrigger = ref<HTMLElement | null>(null);
-let intersectionObserver: IntersectionObserver | null = null;
 
 const displayPosts = computed(() => {
   if (!authStore.isAdmin) {
@@ -255,6 +158,19 @@ function handleCommentCreated(postId: string, comment: Comment) {
       ...commentsPagination.value[postId],
       total: commentsPagination.value[postId].total + 1,
     };
+  } else {
+    // Initialize pagination if it doesn't exist
+    commentsPagination.value[postId] = {
+      total: 1,
+      limit: 10,
+      offset: 0,
+    };
+  }
+
+  // Update post's comment count in the UI
+  const post = posts.value.find(p => p.id === postId);
+  if (post) {
+    post.commentsCount = (post.commentsCount || 0) + 1;
   }
 }
 
@@ -280,6 +196,12 @@ function handleCommentDeleted(postId: string, commentId: string) {
         total: Math.max(0, commentsPagination.value[postId].total - 1),
       };
     }
+  }
+
+  // Update post's comment count in the UI
+  const post = posts.value.find(p => p.id === postId);
+  if (post) {
+    post.commentsCount = Math.max(0, (post.commentsCount || 0) - 1);
   }
 }
 
@@ -391,40 +313,13 @@ async function handleDeletePost(post: Post) {
   }
 }
 
-// Setup intersection observer for infinite scroll
-function setupIntersectionObserver() {
-  if (!loadMoreTrigger.value) return;
-
-  intersectionObserver = new IntersectionObserver(
-    (entries) => {
-      const entry = entries[0];
-      if (entry && entry.isIntersecting && hasMorePosts.value && !loadingMore.value && !loading.value) {
-        loadPosts(true);
-      }
-    },
-    {
-      root: null,
-      rootMargin: '100px',
-      threshold: 0.1,
-    }
-  );
-
-  intersectionObserver.observe(loadMoreTrigger.value);
-}
-
-function cleanupIntersectionObserver() {
-  if (intersectionObserver) {
-    intersectionObserver.disconnect();
-    intersectionObserver = null;
+function handleLoadMore() {
+  if (hasMorePosts.value && !loadingMore.value && !loading.value) {
+    loadPosts(true);
   }
 }
 
 onMounted(async () => {
   await loadPosts(false);
-  setupIntersectionObserver();
-});
-
-onUnmounted(() => {
-  cleanupIntersectionObserver();
 });
 </script>
