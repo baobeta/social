@@ -1,16 +1,16 @@
-import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { beforeAll, afterAll, beforeEach } from 'vitest';
 import { testDb, closeTestDatabase } from '../db/test-connection.js';
-import { users, posts, comments } from '../db/schema/index.js';
+import { users, posts, comments, refreshTokens } from '../db/schema/index.js';
 import { sql } from 'drizzle-orm';
 import { config } from '../lib/config.js';
 
 /**
  * Global test setup for database integration tests
  *
- * This file:
+ * Simple approach:
  * - Sets up test database connection (separate from dev database)
- * - Cleans up data between tests
- * - Provides test utilities
+ * - Cleans database before each test for isolation
+ * - Tests run sequentially (fileParallelism: false)
  *
  * IMPORTANT: Tests use a separate database to avoid affecting development data.
  * The test database is determined by TEST_DATABASE_URL env variable.
@@ -21,17 +21,15 @@ if (!config.isTest) {
   throw new Error('Tests must run with NODE_ENV=test. Check vitest.config.ts');
 }
 
-// Store cleanup functions for test data
-const testDataCleanup: (() => Promise<void>)[] = [];
-
 /**
  * Clean all test data from database
- * This runs before each integration test to ensure isolation
+ * This runs before each test to ensure isolation
  */
 export async function cleanDatabase() {
   // Delete in order to respect foreign key constraints
   await testDb.delete(comments);
   await testDb.delete(posts);
+  await testDb.delete(refreshTokens);
   await testDb.delete(users);
 }
 
@@ -39,23 +37,6 @@ export async function cleanDatabase() {
  * Export test database for use in tests and fixtures
  */
 export { testDb as db };
-
-/**
- * Register a cleanup function to run after test
- */
-export function registerCleanup(cleanup: () => Promise<void>) {
-  testDataCleanup.push(cleanup);
-}
-
-/**
- * Run all registered cleanup functions
- */
-async function runCleanup() {
-  for (const cleanup of testDataCleanup) {
-    await cleanup();
-  }
-  testDataCleanup.length = 0;
-}
 
 // Global hooks for integration tests
 beforeAll(async () => {
@@ -73,11 +54,6 @@ beforeAll(async () => {
 // Clean database before each test
 beforeEach(async () => {
   await cleanDatabase();
-});
-
-// Run cleanup after each test
-afterEach(async () => {
-  await runCleanup();
 });
 
 afterAll(async () => {

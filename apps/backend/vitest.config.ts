@@ -8,6 +8,9 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
     },
+    // Run tests sequentially to avoid database conflicts
+    // Sequential execution is simpler and more reliable for database integration tests
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

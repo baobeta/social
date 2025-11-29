@@ -17,7 +17,7 @@ export async function createTestUser(overrides?: Partial<NewUser>) {
   const fullName = overrides?.fullName || 'Test User';
   const defaultUser: NewUser = {
     username: `testuser_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-    password: await hashPassword('password123'),
+    password: await hashPassword('Password123!'),
     fullName,
     displayName: 'Tester',
     initials: generateInitials(fullName),

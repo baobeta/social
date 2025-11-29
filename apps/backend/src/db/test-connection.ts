@@ -1,31 +1,23 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { db } from './index.js';
 import { config } from '../lib/config.js';
-import * as schema from './schema/index.js';
 
 /**
  * Test database connection
  *
- * This module provides a separate database connection specifically for tests.
- * It ensures tests don't interfere with development data.
- *
- * The connection uses TEST_DATABASE_URL if available, otherwise falls back to DATABASE_URL.
- * NODE_ENV should be set to 'test' when running tests (handled by vitest.config.ts)
+ * This module re-exports the main database connection for use in tests.
+ * The main db connection already uses TEST_DATABASE_URL when NODE_ENV=test (handled by config).
+ * Using the same connection pool for both tests and repositories ensures data consistency.
  */
 
 if (!config.isTest) {
   console.warn('⚠️  Warning: test-connection.ts is being imported outside of test environment');
 }
 
-// Create test-specific client with appropriate settings
-const testClient = postgres(config.database.url, {
-  max: 5, // Smaller pool size for tests
-  idle_timeout: 10,
-  connect_timeout: 5,
-});
+// Re-export the main db connection for use in tests
+export const testDb = db;
 
-export const testDb = drizzle(testClient, { schema });
-
+// No-op since we're sharing the connection
 export const closeTestDatabase = async () => {
-  await testClient.end();
+  // Connection will be closed when process exits
+  // We don't close it here to avoid closing the connection used by other code
 };

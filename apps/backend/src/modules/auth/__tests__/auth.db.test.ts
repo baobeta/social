@@ -196,12 +196,12 @@ describe('AuthService - Database Integration', () => {
 
       // Try with wrong username
       const wrongUsernameError = service
-        .login({ username: 'nonexistent', password: 'Password123!' })
+        .login({ username: 'nonexistent', password: 'Password123!' }, mockRequest)
         .catch((e) => e);
 
       // Try with wrong password
       const wrongPasswordError = service
-        .login({ username: 'existinguser', password: 'Wrongpassword1!' })
+        .login({ username: 'existinguser', password: 'Wrongpassword1!' }, mockRequest)
         .catch((e) => e);
 
       const [error1, error2] = await Promise.all([wrongUsernameError, wrongPasswordError]);
@@ -291,26 +291,26 @@ describe('AuthService - Database Integration', () => {
       // Create multiple users
       const user1 = await service.register({
         username: 'user1',
-        password: 'password1',
+        password: 'Password123!One',
         fullName: 'User One',
-      });
+      }, mockRequest);
 
       const user2 = await service.register({
         username: 'user2',
-        password: 'password2',
+        password: 'Password123!Two',
         fullName: 'User Two',
-      });
+      }, mockRequest);
 
       const user3 = await service.register({
         username: 'user3',
-        password: 'password3',
+        password: 'Password123!Three',
         fullName: 'User Three',
-      });
+      }, mockRequest);
 
       // Each should login with own credentials
-      const login1 = await service.login({ username: 'user1', password: 'password1' });
-      const login2 = await service.login({ username: 'user2', password: 'password2' });
-      const login3 = await service.login({ username: 'user3', password: 'password3' });
+      const login1 = await service.login({ username: 'user1', password: 'Password123!One' }, mockRequest);
+      const login2 = await service.login({ username: 'user2', password: 'Password123!Two' }, mockRequest);
+      const login3 = await service.login({ username: 'user3', password: 'Password123!Three' }, mockRequest);
 
       expect(login1.user.id).toBe(user1.user.id);
       expect(login2.user.id).toBe(user2.user.id);
