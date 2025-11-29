@@ -123,6 +123,7 @@ export class CommentService {
         isDeleted: commentWithAuthor.isDeleted,
         isEdited: commentWithAuthor.isEdited,
         editedAt: commentWithAuthor.editedAt,
+        editedByAdmin: false, // New comments are not edited
         createdAt: commentWithAuthor.createdAt,
         updatedAt: commentWithAuthor.updatedAt,
       },
@@ -176,6 +177,7 @@ export class CommentService {
       isDeleted: comment.isDeleted,
       isEdited: comment.isEdited,
       editedAt: comment.editedAt,
+      editedByAdmin: comment.isEdited && comment.editedBy !== null && comment.editedBy !== comment.authorId,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
     };
@@ -227,6 +229,7 @@ export class CommentService {
         isDeleted: comment.isDeleted,
         isEdited: comment.isEdited,
         editedAt: comment.editedAt,
+        editedByAdmin: comment.isEdited && comment.editedBy !== null && comment.editedBy !== comment.authorId,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
         replyCount: await this.repository.countReplies(comment.id),
@@ -301,6 +304,7 @@ export class CommentService {
       isDeleted: reply.isDeleted,
       isEdited: reply.isEdited,
       editedAt: reply.editedAt,
+      editedByAdmin: reply.isEdited && reply.editedBy !== null && reply.editedBy !== reply.authorId,
       createdAt: reply.createdAt,
       updatedAt: reply.updatedAt,
     }));
@@ -371,6 +375,7 @@ export class CommentService {
         isDeleted: updatedComment.isDeleted,
         isEdited: updatedComment.isEdited,
         editedAt: updatedComment.editedAt,
+        editedByAdmin: updatedComment.isEdited && updatedComment.editedBy !== null && updatedComment.editedBy !== updatedComment.authorId,
         createdAt: updatedComment.createdAt,
         updatedAt: updatedComment.updatedAt,
       },

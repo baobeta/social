@@ -74,11 +74,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function updateProfile(fullName: string): Promise<void> {
+  async function updateProfile(data: { fullName?: string; displayName?: string | null }): Promise<void> {
     loading.value = true;
     error.value = null;
     try {
-      const response = await authService.updateProfile({ fullName });
+      const response = await authService.updateProfile(data);
       user.value = response.data.user;
     } catch (err: any) {
       error.value = err.response?.data?.error || 'Update failed';

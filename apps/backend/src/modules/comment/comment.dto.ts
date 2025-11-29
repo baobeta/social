@@ -94,6 +94,7 @@ export interface CommentResponse {
   isDeleted: boolean;
   isEdited: boolean;
   editedAt: Date | null;
+  editedByAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
   // Reply count for nested comments
