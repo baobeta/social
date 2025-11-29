@@ -1,5 +1,6 @@
 import type { APIRequestContext } from '@playwright/test';
 import { registerUser, type TestUser } from '../utils/api-helpers';
+import { seedUserToDatabase, type SeedUserData } from '../utils/db-seed';
 
 /**
  * Predefined test users for E2E tests
@@ -10,7 +11,7 @@ import { registerUser, type TestUser } from '../utils/api-helpers';
 
 export interface SeededUser extends TestUser {
   id?: string;
-  role: string;
+  role: 'user' | 'admin';
 }
 
 /**
@@ -70,12 +71,37 @@ export function createDynamicUser(suffix?: string): TestUser {
 
 /**
  * Seed a predefined user into the database
- * This will attempt to register the user, ignoring errors if user already exists
+ *
+ * For admin users, this bypasses the API and inserts directly into the database
+ * because the registration API doesn't allow setting the role field for security reasons.
+ *
+ * For regular users, we use the API for more realistic testing.
  */
 export async function seedUser(
   request: APIRequestContext,
   user: SeededUser
 ): Promise<SeededUser> {
+  // If user is admin, seed directly to database to set role correctly
+  if (user.role === 'admin') {
+    try {
+      const userId = await seedUserToDatabase({
+        username: user.username,
+        password: user.password,
+        fullName: user.fullName,
+        displayName: user.displayName,
+        role: user.role,
+      });
+      return {
+        ...user,
+        id: userId,
+      };
+    } catch (error) {
+      console.log(`User ${user.username} might already exist, continuing...`);
+      return user;
+    }
+  }
+
+  // For regular users, use API registration
   try {
     const response = await registerUser(request, user);
     return {
@@ -84,7 +110,6 @@ export async function seedUser(
     };
   } catch (error) {
     // User might already exist, that's okay
-    // In a real setup, you might want to check the error message
     console.log(`User ${user.username} might already exist, continuing...`);
     return user;
   }

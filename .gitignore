@@ -41,6 +41,11 @@ coverage/
 *.lcov
 .nyc_output/
 
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Logs
 logs/
 *.log
@@ -118,3 +123,11 @@ JWT_AUTHENTICATION.md
 .gitignore
 HTTPONLY_COOKIE_AUTH.md
 SECURITY.md
+E2E_SETUP_SUMMARY.md
+E2E_SIMPLE_SETUP.md
+.gitignore
+.gitignore
+e2e/DATA_CI_SELECTORS.md
+e2e/E2E_DATABASE_SETUP.md
+.gitignore
+.gitignore

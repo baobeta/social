@@ -34,18 +34,18 @@ interface TestFixtures {
 
 export const test = base.extend<TestFixtures>({
   // Dynamic test user - creates a unique user for each test
-  testUser: async ({}, use) => {
+  testUser: async ({ }, use) => {
     const user = createDynamicUser();
     await use(user);
   },
 
-  // Predefined regular user
+  // Predefined regular user (seeded on demand)
   regularUser: async ({ request }, use) => {
     const user = await seedUser(request, TEST_USERS.regular);
     await use(user);
   },
 
-  // Predefined admin user
+  // Predefined admin user (seeded on demand)
   adminUser: async ({ request }, use) => {
     const user = await seedUser(request, TEST_USERS.admin);
     await use(user);

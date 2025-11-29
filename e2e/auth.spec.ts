@@ -114,9 +114,11 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('domcontentloaded');
     setLoginForm(page, { username, password });
 
-    // Submit form
-    await page.click('[data-ci="login-submit-button"]');
-    await page.waitForLoadState('domcontentloaded');
+    // Submit form and wait for navigation
+    await Promise.all([
+      page.waitForURL('/timeline', { timeout: 10000 }),
+      page.click('[data-ci="login-submit-button"]'),
+    ]);
 
     await expect(page).toHaveURL('/timeline');
   });
