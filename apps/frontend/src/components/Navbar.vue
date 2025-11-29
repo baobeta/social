@@ -1,5 +1,5 @@
 <template>
-  <nav class="bg-surface-card border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+  <nav class="bg-white/80 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-50 shadow-md">
     <div class="max-w-5xl mx-auto px-6 lg:px-8">
       <div class="flex justify-between items-center h-20">
         <NavbarBrand />

@@ -14,7 +14,7 @@
     <template #footer>
       <p class="text-sm text-gray-600">
         Already have an account?
-        <RouterLink to="/login" class="font-medium text-blue-600 hover:text-blue-700">
+        <RouterLink to="/login" class="font-medium text-green-600 hover:text-green-700">
           Sign in
         </RouterLink>
       </p>

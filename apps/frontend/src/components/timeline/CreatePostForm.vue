@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-surface-card rounded-card border border-gray-100 p-6 mb-8 shadow-card hover:shadow-card-hover transition-shadow">
+  <div class="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200 p-6 mb-8 shadow-lg hover:shadow-xl transition-all">
     <form @submit.prevent="emit('submit')" class="flex flex-col gap-4">
       <Textarea
         :model-value="modelValue"
@@ -7,7 +7,7 @@
         placeholder="What's on your mind?"
         :autoResize="true"
         rows="3"
-        class="w-full border-gray-200 focus:border-primary-400 focus:ring-primary-400 rounded-lg"
+        class="w-full border-2 border-gray-200 focus:border-green-500 focus:ring-0 rounded-xl transition-colors"
         :disabled="loading"
       />
       <div class="flex justify-end">
@@ -15,9 +15,21 @@
           type="submit"
           :disabled="!modelValue.trim() || loading"
           :loading="loading"
-          label="Post"
-          class="bg-primary-500 hover:bg-primary-600 border-primary-500 hover:border-primary-600 px-6 py-2.5 rounded-button font-medium transition-colors"
-        />
+          class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 rounded-xl font-semibold text-white shadow-md hover:shadow-lg transition-all duration-200"
+        >
+          <template v-if="!loading">
+            <span class="flex items-center justify-center gap-2">
+              <i class="pi pi-send"></i>
+              Post
+            </span>
+          </template>
+          <template v-else>
+            <span class="flex items-center justify-center gap-2">
+              <i class="pi pi-spin pi-spinner"></i>
+              Posting...
+            </span>
+          </template>
+        </Button>
       </div>
     </form>
   </div>

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-surface">
+  <div class="min-h-screen bg-gradient-to-br from-white via-green-50 to-emerald-100">
     <Navbar />
 
     <div class="max-w-3xl mx-auto px-6 py-section">

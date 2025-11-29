@@ -1,113 +1,158 @@
 <template>
-  <form @submit.prevent="handleSubmit" class="space-y-6">
-    <Message v-if="error" severity="error" :closable="false">
-      {{ error }}
-    </Message>
+  <form @submit.prevent="handleSubmit" class="space-y-5">
+    <!-- Error Message with Icon -->
+    <div
+      v-if="error"
+      class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700"
+    >
+      <i class="pi pi-exclamation-circle text-red-500 mt-0.5"></i>
+      <span class="text-sm">{{ error }}</span>
+    </div>
 
-    <div class="flex flex-col gap-2">
-      <label for="fullName" class="font-medium text-gray-700">
+    <!-- Full Name Field -->
+    <div class="space-y-2">
+      <label for="fullName" class="block text-sm font-semibold text-gray-700">
         Full Name
       </label>
-      <InputText
-        id="fullName"
-        :model-value="modelValue.fullName"
-        @update:model-value="updateField('fullName', $event)"
-        type="text"
-        required
-        placeholder="John Doe"
-        class="w-full"
-      />
+      <div class="relative">
+        <i v-if="!modelValue.fullName" class="pi pi-id-card absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <InputText
+          id="fullName"
+          :model-value="modelValue.fullName"
+          @update:model-value="updateField('fullName', $event)"
+          type="text"
+          required
+          placeholder="        Enter your full name"
+          class="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-0 transition-colors"
+        />
+      </div>
     </div>
 
-    <div class="flex flex-col gap-2">
-      <label for="username" class="font-medium text-gray-700">
+    <!-- Username Field -->
+    <div class="space-y-2">
+      <label for="username" class="block text-sm font-semibold text-gray-700">
         Username
       </label>
-      <InputText
-        id="username"
-        :model-value="modelValue.username"
-        @update:model-value="updateField('username', $event)"
-        type="text"
-        required
-        pattern="[a-zA-Z0-9_]+"
-        placeholder="johndoe"
-        class="w-full"
-        :class="{ 'p-invalid': usernameError }"
-        @blur="validateUsername"
-      />
-      <small v-if="usernameError" class="text-red-600">{{ usernameError }}</small>
-      <small v-else class="text-gray-500">Only letters, numbers, and underscores allowed</small>
+      <div class="relative">
+        <i v-if="!modelValue.username" class="pi pi-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <InputText
+          id="username"
+          :model-value="modelValue.username"
+          @update:model-value="updateField('username', $event)"
+          type="text"
+          required
+          pattern="[a-zA-Z0-9_]+"
+          placeholder="        Enter your username"
+          class="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-0 transition-colors"
+          :class="{ 'border-red-400 focus:border-red-500': usernameError }"
+          @blur="validateUsername"
+        />
+      </div>
+      <small v-if="usernameError" class="flex items-center gap-1 text-red-600">
+        <i class="pi pi-times-circle text-xs"></i>
+        {{ usernameError }}
+      </small>
+      <small v-else class="flex items-center gap-1 text-gray-500">
+        <i class="pi pi-info-circle text-xs"></i>
+        Only letters, numbers, and underscores (min 3 characters)
+      </small>
     </div>
 
-    <div class="flex flex-col gap-2">
-      <label for="password" class="font-medium text-gray-700">
+    <!-- Password Field -->
+    <div class="space-y-2">
+      <label for="password" class="block text-sm font-semibold text-gray-700">
         Password
       </label>
-      <Password
-        id="password"
-        :model-value="modelValue.password"
-        @update:model-value="updateField('password', $event)"
-        required
-        placeholder="Strong password required"
-        :feedback="false"
-        toggleMask
-        class="w-full"
-        inputClass="w-full"
-      />
+      <div class="relative">
+        <i class="pi pi-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10"></i>
+        <Password
+          id="password"
+          :model-value="modelValue.password"
+          @update:model-value="updateField('password', $event)"
+          required
+          placeholder="Create a strong password"
+          :feedback="false"
+          toggleMask
+          class="w-full [&_input]:pl-11 [&_input]:pr-12 [&_input]:py-3 [&_input]:rounded-xl [&_input]:border-2 [&_input]:border-gray-200 [&_input:focus]:border-green-500 [&_input]:transition-colors"
+          inputClass="w-full"
+        />
+      </div>
       <PasswordStrengthIndicator :password="modelValue.password" />
     </div>
 
-    <div class="flex flex-col gap-2">
-      <label for="confirmPassword" class="font-medium text-gray-700">
+    <!-- Confirm Password Field -->
+    <div class="space-y-2">
+      <label for="confirmPassword" class="block text-sm font-semibold text-gray-700">
         Confirm Password
       </label>
-      <Password
-        id="confirmPassword"
-        :model-value="confirmPassword"
-        @update:model-value="emit('update:confirmPassword', $event)"
-        required
-        placeholder="Re-enter your password"
-        :feedback="false"
-        toggleMask
-        class="w-full"
-        inputClass="w-full"
-      />
-      <Message
+      <div class="relative">
+        <i class="pi pi-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10"></i>
+        <Password
+          id="confirmPassword"
+          :model-value="confirmPassword"
+          @update:model-value="emit('update:confirmPassword', $event)"
+          required
+          placeholder="Re-enter your password"
+          :feedback="false"
+          toggleMask
+          class="w-full [&_input]:pl-11 [&_input]:pr-12 [&_input]:py-3 [&_input]:rounded-xl [&_input]:border-2 [&_input]:border-gray-200 [&_input:focus]:border-green-500 [&_input]:transition-colors"
+          :class="{ '[&_input]:border-red-400 [&_input:focus]:border-red-500': confirmPassword && confirmPassword !== modelValue.password }"
+          inputClass="w-full"
+        />
+      </div>
+      <small
         v-if="confirmPassword && confirmPassword !== modelValue.password"
-        severity="error"
-        :closable="false"
+        class="flex items-center gap-1 text-red-600"
       >
+        <i class="pi pi-times-circle text-xs"></i>
         Passwords do not match
-      </Message>
+      </small>
     </div>
 
-    <div class="flex flex-col gap-2">
-      <label for="role" class="font-medium text-gray-700">
+    <!-- Role Field -->
+    <div class="space-y-2">
+      <label for="role" class="block text-sm font-semibold text-gray-700">
         Role
       </label>
-      <Select
-        id="role"
-        :model-value="modelValue.role"
-        @update:model-value="updateField('role', $event)"
-        :options="roleOptions"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Select a role"
-        class="w-full"
-      />
-      <p class="text-xs text-gray-500">
+      <div class="relative">
+        <Select
+          id="role"
+          :model-value="modelValue.role"
+          @update:model-value="updateField('role', $event)"
+          :options="roleOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select a role"
+          class="w-full [&_button]:pl-11 [&_button]:pr-4 [&_button]:py-3 [&_button]:rounded-xl [&_button]:border-2 [&_button]:border-gray-200 [&_button:focus]:border-green-500 [&_button]:transition-colors"
+        >
+      </Select>
+      </div>
+      <small class="flex items-center gap-1 text-gray-500">
+        <i class="pi pi-info-circle text-xs"></i>
         For demo purposes, you can choose your role
-      </p>
+      </small>
     </div>
 
+    <!-- Submit Button -->
     <Button
       type="submit"
       :disabled="loading || !isValid"
       :loading="loading"
-      label="Create Account"
-      class="w-full"
-      severity="primary"
-    />
+      class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-200"
+    >
+      <template v-if="!loading">
+        <span class="flex items-center justify-center gap-2">
+          <i class="pi pi-user-plus"></i>
+          Create Account
+        </span>
+      </template>
+      <template v-else>
+        <span class="flex items-center justify-center gap-2">
+          <i class="pi pi-spin pi-spinner"></i>
+          Creating account...
+        </span>
+      </template>
+    </Button>
   </form>
 </template>
 
@@ -119,7 +164,6 @@ import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
-import Message from 'primevue/message';
 
 interface Props {
   modelValue: RegisterData;

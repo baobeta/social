@@ -1,6 +1,6 @@
 <template>
   <div class="mb-8">
-    <IconField iconPosition="left">
+    <IconField iconPosition="left" class="flex">
       <InputIcon class="pi pi-search" />
       <InputText
         :model-value="modelValue"
@@ -8,7 +8,7 @@
         @input="emit('search')"
         type="text"
         placeholder="Search posts by text or username..."
-        class="w-full"
+        class="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-0 transition-colors bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md"
       />
     </IconField>
   </div>
