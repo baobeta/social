@@ -14,6 +14,10 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
 
+  // Global setup and teardown
+  globalSetup: require.resolve('./e2e/setup/global-setup.ts'),
+  globalTeardown: require.resolve('./e2e/setup/global-teardown.ts'),
+
   // Maximum time one test can run
   timeout: 30 * 1000,
 
@@ -73,7 +77,9 @@ export default defineConfig({
   // Run local dev server before starting tests
   webServer: [
     {
-      command: 'npm run dev:backend',
+      // Backend server with E2E test environment
+      // NODE_ENV=e2e triggers the backend to use E2E_DATABASE_URL from .env
+      command: 'NODE_ENV=e2e npm run dev:backend',
       url: 'http://localhost:3000/health',
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,

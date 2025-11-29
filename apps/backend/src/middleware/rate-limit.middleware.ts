@@ -2,6 +2,12 @@ import rateLimit from 'express-rate-limit';
 import type { Request, Response } from 'express';
 
 /**
+ * Check if we're in E2E test environment
+ * Rate limiting should be disabled for E2E tests
+ */
+const isE2EEnvironment = process.env.NODE_ENV === 'e2e';
+
+/**
  * Strict rate limiting for authentication endpoints
  * Prevents brute force attacks on login/register
  */
@@ -29,6 +35,8 @@ export const authRateLimit = rateLimit({
   },
   // Skip rate limiting for successful requests
   skipSuccessfulRequests: true,
+  // Skip rate limiting in E2E test environment
+  skip: () => isE2EEnvironment,
 });
 
 /**
@@ -43,6 +51,8 @@ export const apiRateLimit = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting in E2E test environment
+  skip: () => isE2EEnvironment,
 });
 
 /**
@@ -58,6 +68,8 @@ export const passwordResetRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false,
+  // Skip rate limiting in E2E test environment
+  skip: () => isE2EEnvironment,
 });
 
 /**
@@ -78,4 +90,6 @@ export const contentCreationRateLimit = rateLimit({
     const userId = req.user?.userId || req.ip;
     return `content-${userId}`;
   },
+  // Skip rate limiting in E2E test environment
+  skip: () => isE2EEnvironment,
 });
