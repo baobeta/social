@@ -123,6 +123,9 @@ export default function TimelineView() {
     setIsEditDialogVisible(false);
   }
 
+  // NOTE: we will refresh all list page after edit or delete post successfully
+  // We can consider using optimistic update to update the post in the list without refetching the entire list
+  // In Vue3, I already handle this case with optimistic update, but in React we will handle later
   function saveEdit() {
     if (!editingPostId || !editContent.trim()) return;
     updatePostMutation.mutate({ id: editingPostId, data: { content: editContent } });
