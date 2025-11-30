@@ -45,7 +45,7 @@ function PostActions(
   { post, loading, onEdit, onDelete }:
   { post: Post, loading: boolean, onEdit: (post: Post) => void, onDelete: (post: Post) => void }) {
   return (
-    <div className="flex items-center justify-end">
+    <div className="flex items-center justify-end w-fit">
       <div className="flex gap-2">
         <EditButton post={post} loading={loading} onEdit={onEdit} />
         <DeleteButton post={post} loading={loading} onDelete={onDelete} />
@@ -75,8 +75,8 @@ function PostCardContent({ post }: { post: Post }) {
 
 function PostCardHeader({ post, getInitials }: { post: Post, getInitials: (name: string) => string }) {
   return (
-    <div className="flex items-start justify-between mb-4">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center space-x-2 mb-4">
+      <div className="flex items-center gap-3 space-x-2">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-semibold">
           {getInitials(post.author.fullName)}
         </div>
@@ -108,8 +108,10 @@ export default function PostCard({ post, loading = false, onEdit, onDelete }: Po
     <div
       className={`bg-white rounded-xl border shadow-md hover:shadow-lg transition-shadow p-6 ${deletedClass}`}
     >
-      <PostCardHeader post={post} getInitials={getInitials} />
-      {allowShowActions && <PostActions post={post} loading={loading} onEdit={onEdit} onDelete={onDelete} /> }
+      <div className="flex items-center justify-between">
+        <PostCardHeader post={post} getInitials={getInitials} />
+        {allowShowActions && <PostActions post={post} loading={loading} onEdit={onEdit} onDelete={onDelete} /> }
+      </div>
       <PostCardContent post={post} />
       <PostCardFooter post={post} />
     </div>
