@@ -23,6 +23,30 @@ if [ ! -f "apps/backend/.env" ]; then
   fi
 fi
 
+if [ ! -f "apps/frontend/.env" ]; then
+  echo "⚠️  Warning: apps/frontend/.env not found"
+  echo "   Creating from .env.example if it exists..."
+  if [ -f "apps/frontend/.env.example" ]; then
+    cp apps/frontend/.env.example apps/frontend/.env
+    echo "✅ Created apps/frontend/.env from .env.example"
+  else
+    echo "⚠️  Warning: apps/frontend/.env.example not found"
+    echo "   Please create apps/frontend/.env manually if needed"
+  fi
+fi
+
+if [ ! -f "apps/frontend-react/.env" ]; then
+  echo "⚠️  Warning: apps/frontend-react/.env not found"
+  echo "   Creating from .env.example if it exists..."
+  if [ -f "apps/frontend-react/.env.example" ]; then
+    cp apps/frontend-react/.env.example apps/frontend-react/.env
+    echo "✅ Created apps/frontend-react/.env from .env.example"
+  else
+    echo "⚠️  Warning: apps/frontend-react/.env.example not found"
+    echo "   Please create apps/frontend-react/.env manually if needed"
+  fi
+fi
+
 cd apps/backend
 
 echo "📊 Loading database connection details..."
