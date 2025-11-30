@@ -70,7 +70,11 @@ export const test = base.extend<TestFixtures>({
   },
 
   // Authenticated page with predefined regular user
-  authenticatedRegularUser: async ({ page, regularUser }, use) => {
+  // IMPORTANT: Uses a separate browser context to isolate cookies from other users
+  authenticatedRegularUser: async ({ browser, regularUser }, use) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
     await page.goto('/login');
     await page.waitForLoadState('domcontentloaded');
     await page.fill('[data-ci="login-username-input"]', regularUser.username);
@@ -79,10 +83,17 @@ export const test = base.extend<TestFixtures>({
     await page.waitForURL('/timeline');
 
     await use(page);
+
+    // Cleanup: close the context after the test
+    await context.close();
   },
 
   // Authenticated page with predefined admin user
-  authenticatedAdminUser: async ({ page, adminUser }, use) => {
+  // IMPORTANT: Uses a separate browser context to isolate cookies from other users
+  authenticatedAdminUser: async ({ browser, adminUser }, use) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
     await page.goto('/login');
     await page.waitForLoadState('domcontentloaded');
     await page.fill('[data-ci="login-username-input"]', adminUser.username);
@@ -91,6 +102,9 @@ export const test = base.extend<TestFixtures>({
     await page.waitForURL('/timeline');
 
     await use(page);
+
+    // Cleanup: close the context after the test
+    await context.close();
   },
 });
 

@@ -14,6 +14,7 @@
             </span>
             <Tag
               v-if="post.isDeleted"
+              data-ci="post-deleted-badge"
               value="Deleted"
               severity="danger"
               class="text-xs"
@@ -23,10 +24,10 @@
             <span>@{{ post.author.username }}</span>
             <span class="text-gray-300">•</span>
             <span data-ci="post-timestamp">{{ formatDate(post.createdAt) }}</span>
-            <span v-if="post.editedByAdmin" class="text-purple-600">
+            <span v-if="post.editedByAdmin" data-ci="post-edited-by-admin-indicator" class="text-purple-600">
               • Edited by admin
             </span>
-            <span v-else-if="post.isEdited" class="text-gray-500">
+            <span v-else-if="post.isEdited" data-ci="post-edited-indicator" class="text-gray-500">
               • Edited
             </span>
           </div>

@@ -27,12 +27,19 @@ export interface SeedUserData {
  * This is the proper way to create admin users for testing
  */
 export async function seedUserToDatabase(userData: SeedUserData): Promise<string> {
-  const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/social_media_e2e';
+  // Use E2E_DATABASE_URL if available (matches backend config), otherwise DATABASE_URL, with fallback
+  const connectionString =
+    process.env.E2E_DATABASE_URL ||
+    'postgresql://baolequoc@localhost:5432/social_media_e2e';
+
   const client = postgres(connectionString, { max: 1 });
   const db = drizzle(client);
 
   try {
-    // Check if user already exists first
+    // Hash the password using bcrypt with the same salt rounds as the backend
+    const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
+
+    // Check if user already exists
     const existingUser = await db
       .select()
       .from(users)
@@ -40,26 +47,21 @@ export async function seedUserToDatabase(userData: SeedUserData): Promise<string
       .limit(1);
 
     if (existingUser.length > 0) {
-      // If user exists with matching role, just return it
-      if (existingUser[0].role === userData.role) {
-        console.log(`[DB Seed] User ${userData.username} already exists with correct role ${userData.role}`);
-        await client.end();
-        return existingUser[0].id;
-      }
+      console.log(`[DB Seed] User ${userData.username} exists, updating password and role to ensure correctness...`);
 
-      // If role doesn't match, update the role
-      console.log(`[DB Seed] Updating user ${userData.username} role from ${existingUser[0].role} to ${userData.role}`);
+      // Always update password and role to ensure they match what tests expect
+      // This is critical when password hashing logic changes
       await db
         .update(users)
-        .set({ role: userData.role })
+        .set({
+          password: hashedPassword,
+          role: userData.role,
+        })
         .where(eq(users.username, userData.username));
 
       await client.end();
       return existingUser[0].id;
     }
-
-    // Hash the password using bcrypt with the same salt rounds as the backend
-    const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
 
     console.log(`[DB Seed] Creating new user ${userData.username} with role ${userData.role}...`);
 
@@ -106,7 +108,12 @@ export async function seedUsersToDatabase(usersData: SeedUserData[]): Promise<Re
  * Clean up test users from the database
  */
 export async function cleanupTestUsers(usernames: string[]): Promise<void> {
-  const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/social_media_e2e';
+  // Use E2E_DATABASE_URL if available (matches backend config), otherwise DATABASE_URL, with fallback
+  const connectionString =
+    process.env.E2E_DATABASE_URL ||
+    process.env.DATABASE_URL ||
+    'postgresql://baolequoc@localhost:5432/social_media_e2e';
+
   const client = postgres(connectionString, { max: 1 });
   const db = drizzle(client);
 

@@ -365,6 +365,11 @@ export class CommentService {
       throw new Error('Failed to retrieve updated comment');
     }
 
+    const editedByAdminValue =
+      updatedComment.isEdited &&
+      updatedComment.editedBy !== null &&
+      updatedComment.editedBy !== updatedComment.authorId;
+
     const response = {
       comment: {
         id: updatedComment.id,
@@ -375,7 +380,7 @@ export class CommentService {
         isDeleted: updatedComment.isDeleted,
         isEdited: updatedComment.isEdited,
         editedAt: updatedComment.editedAt,
-        editedByAdmin: updatedComment.isEdited && updatedComment.editedBy !== null && updatedComment.editedBy !== updatedComment.authorId,
+        editedByAdmin: editedByAdminValue,
         createdAt: updatedComment.createdAt,
         updatedAt: updatedComment.updatedAt,
       },

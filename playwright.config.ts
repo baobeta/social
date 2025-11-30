@@ -84,7 +84,7 @@ export default defineConfig({
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       // Set to 'pipe' to see server logs during test runs
-      stdout: process.env.DEBUG ? 'pipe' : 'ignore',
+      stdout: 'pipe', // Always show stdout to see DEBUG logs
       stderr: 'pipe',
     },
     {

@@ -114,11 +114,13 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('domcontentloaded');
     setLoginForm(page, { username, password });
 
-    // Submit form and wait for navigation
-    await Promise.all([
-      page.waitForURL('/timeline', { timeout: 10000 }),
-      page.click('[data-ci="login-submit-button"]'),
-    ]);
+    // Wait for button to be enabled and then submit
+    await page.waitForSelector('[data-ci="login-submit-button"]:not([disabled])', { timeout: 5000 });
+    await page.click('[data-ci="login-submit-button"]');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for navigation to complete
+    await page.waitForURL('/timeline', { timeout: 10000 });
 
     await expect(page).toHaveURL('/timeline');
   });
@@ -170,6 +172,7 @@ test.describe('Authentication', () => {
   test('should redirect to login when accessing protected route', async ({ page }) => {
     // Try to access home page without authentication
     await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should redirect to login page (if home is protected)
     // Adjust this based on your app's routing logic

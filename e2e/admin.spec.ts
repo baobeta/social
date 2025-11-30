@@ -78,8 +78,8 @@ test.describe('Admin Features', () => {
     await adminPage.waitForLoadState('networkidle');
     const deletedPost = adminPage.locator('[data-ci="post-card"]').filter({ hasText: 'Post to be deleted by admin' });
 
-    // Should show "Deleted" badge (UC24)
-    await expect(deletedPost.locator('text=Deleted')).toBeVisible();
+    // Should show "Deleted" badge (UC24) - use more specific selector to avoid matching post content
+    await expect(deletedPost.locator('[data-ci="post-deleted-badge"]')).toBeVisible();
   });
 
   test('should allow admin to edit any user comment (UC21)', async ({ authenticatedAdminUser: adminPage, authenticatedRegularUser: userPage, request }) => {
@@ -198,8 +198,8 @@ test.describe('Admin Features', () => {
     const deletedPost = adminPage.locator('[data-ci="post-card"]').filter({ hasText: 'Post to check deleted visibility' });
     await expect(deletedPost).toBeVisible();
 
-    // Should show "Deleted" badge (UC24)
-    await expect(deletedPost.locator('text=Deleted')).toBeVisible();
+    // Should show "Deleted" badge (UC24) - use more specific selector to avoid matching post content
+    await expect(deletedPost.locator('[data-ci="post-deleted-badge"]')).toBeVisible();
 
     // Regular user views timeline - should NOT see deleted post
     await userPage.goto('/timeline');
@@ -220,9 +220,9 @@ test.describe('Admin Features', () => {
     await page.fill('[data-ci="post-edit-textarea"]', 'Edited content');
     await page.click('[data-ci="post-edit-save-button"]');
 
-    // Verify "Edited" indicator is shown (use more specific selector to avoid matching post content)
+    // Verify "Edited" indicator is shown (use data-ci attribute to avoid matching "Edited by admin")
     const editedPost = page.locator('[data-ci="post-card"]').filter({ hasText: 'Edited content' });
-    await expect(editedPost.locator('span:has-text("• Edited")')).toBeVisible();
+    await expect(editedPost.locator('[data-ci="post-edited-indicator"]')).toBeVisible();
   });
 
   test('should show "Edited by admin" indicator when admin edits (UC26)', async ({ authenticatedAdminUser: adminPage, authenticatedRegularUser: userPage, request }) => {

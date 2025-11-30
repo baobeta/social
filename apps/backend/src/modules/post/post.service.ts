@@ -254,6 +254,8 @@ export class PostService {
 
     const commentsCount = await this.commentRepository.countByPostId(postId);
 
+    const editedByAdminValue = updatedPost.isEdited && updatedPost.editedBy !== null && updatedPost.editedBy !== updatedPost.authorId;
+
     const response = {
       post: {
         id: updatedPost.id,
@@ -262,7 +264,7 @@ export class PostService {
         isDeleted: updatedPost.isDeleted,
         isEdited: updatedPost.isEdited,
         editedAt: updatedPost.editedAt,
-        editedByAdmin: updatedPost.isEdited && updatedPost.editedBy !== null && updatedPost.editedBy !== updatedPost.authorId,
+        editedByAdmin: editedByAdminValue,
         createdAt: updatedPost.createdAt,
         updatedAt: updatedPost.updatedAt,
         commentsCount,
