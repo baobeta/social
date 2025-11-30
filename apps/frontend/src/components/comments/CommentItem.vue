@@ -141,9 +141,6 @@ const isEditing = ref(false);
 const editContent = ref('');
 const editLoading = ref(false);
 const isDeleting = ref(false);
-const showReplyForm = ref(false);
-const replyContent = ref('');
-const replyLoading = ref(false);
 
 const canEdit = computed(() => {
   if (!authStore.user) return false;
