@@ -13,6 +13,7 @@ import userRoutes from './modules/user/user.routes.js';
 import searchRoutes from './modules/search/search.routes.js';
 import postRoutes from './modules/post/post.routes.js';
 import commentRoutes from './modules/comment/comment.routes.js';
+import auditRoutes from './modules/audit/audit.routes.js';
 
 const app = express();
 
@@ -63,6 +64,9 @@ app.use('/api/posts', apiRateLimit, postRoutes);
 
 // Comment routes - content creation rate limiting to prevent spam
 app.use('/api', apiRateLimit, commentRoutes); // Comment routes include both /posts/:postId/comments and /comments/:id
+
+// Audit log routes - admin access only
+app.use('/api/audit-logs', apiRateLimit, auditRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

@@ -4,9 +4,13 @@ import { config } from '../lib/config.js';
 import * as schema from './schema/index.js';
 
 const client = postgres(config.database.url, {
-  max: 10,
+  max: config.isTest ? 1 : 10,
   idle_timeout: 20,
   connect_timeout: 10,
+  prepare: false,
+  transform: {
+    undefined: null,
+  },
 });
 
 export const db = drizzle(client, { schema });

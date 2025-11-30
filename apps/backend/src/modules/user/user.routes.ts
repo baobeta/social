@@ -1,29 +1,31 @@
 import { Router } from 'express';
 import { UserController } from './user.controller.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
+import { createAuditLogMiddleware } from '../audit/audit.middleware.js';
 
 const router = Router();
 const controller = new UserController();
+const auditLogMiddleware = createAuditLogMiddleware();
 
 /**
  * @route   GET /api/users/me
  * @desc    Get current authenticated user's profile
  * @access  Private
  */
-router.get('/me', authenticate, controller.getMyProfile);
+router.get('/me', authenticate, auditLogMiddleware, controller.getMyProfile);
 
 /**
  * @route   PATCH /api/users/me
  * @desc    Update current user's profile (full name, display name)
  * @access  Private
  */
-router.patch('/me', authenticate, controller.updateMyProfile);
+router.patch('/me', authenticate, auditLogMiddleware, controller.updateMyProfile);
 
 /**
  * @route   GET /api/users/:id
  * @desc    Get user profile by ID
  * @access  Private (requires authentication)
  */
-router.get('/:id', authenticate, controller.getUserById);
+router.get('/:id', authenticate, auditLogMiddleware, controller.getUserById);
 
 export default router;

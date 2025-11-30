@@ -160,3 +160,71 @@ export type NewPost = typeof posts.$inferInsert;
 
 export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
+
+// ============================================================================
+// AUDIT LOGS TABLE
+// ============================================================================
+
+// Audit action enum
+export const auditActionEnum = pgEnum('audit_action', [
+  'create',
+  'update',
+  'delete',
+  'read',
+  'login',
+  'logout',
+  'register',
+  'refresh_token',
+]);
+
+// Resource type enum
+export const auditResourceTypeEnum = pgEnum('audit_resource_type', [
+  'user',
+  'post',
+  'comment',
+  'auth',
+]);
+
+export const auditLogs = pgTable('audit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+
+  // User who performed the action (nullable for unauthenticated actions like register)
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  username: varchar('username', { length: 50 }), // Denormalized for historical record
+
+  // Action details
+  action: auditActionEnum('action').notNull(),
+  resourceType: auditResourceTypeEnum('resource_type').notNull(),
+  resourceId: uuid('resource_id'), // ID of the affected resource
+
+  // HTTP request details
+  method: varchar('method', { length: 10 }), // GET, POST, PATCH, DELETE
+  path: varchar('path', { length: 500 }), // Request path
+  statusCode: varchar('status_code', { length: 3 }), // HTTP status code
+
+  // Request metadata
+  ipAddress: varchar('ip_address', { length: 50 }),
+  userAgent: varchar('user_agent', { length: 500 }),
+
+  // Change tracking (for update operations)
+  oldValues: text('old_values'), // JSON string of old values
+  newValues: text('new_values'), // JSON string of new values
+
+  // Additional context
+  metadata: text('metadata'), // JSON string for additional context
+  errorMessage: text('error_message'), // For failed operations
+
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  // Indexes for performance
+  userIdIdx: index('audit_logs_user_id_idx').on(table.userId),
+  actionIdx: index('audit_logs_action_idx').on(table.action),
+  resourceTypeIdx: index('audit_logs_resource_type_idx').on(table.resourceType),
+  resourceIdIdx: index('audit_logs_resource_id_idx').on(table.resourceId),
+  createdAtIdx: index('audit_logs_created_at_idx').on(table.createdAt),
+  // Composite index for common queries
+  userActionIdx: index('audit_logs_user_action_idx').on(table.userId, table.action),
+}));
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type NewAuditLog = typeof auditLogs.$inferInsert;

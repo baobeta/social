@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest';
-import { testDb, closeTestDatabase } from '../db/test-connection.js';
-import { users, posts, comments, refreshTokens } from '../db/schema/index.js';
+import { testDb, closeTestDatabase, refreshTestConnection } from '../db/test-connection.js';
+import { users, posts, comments, refreshTokens, auditLogs } from '../db/schema/index.js';
 import { sql } from 'drizzle-orm';
 import { config } from '../lib/config.js';
 
@@ -27,6 +27,7 @@ if (!config.isTest) {
  */
 export async function cleanDatabase() {
   // Delete in order to respect foreign key constraints
+  await testDb.delete(auditLogs);
   await testDb.delete(comments);
   await testDb.delete(posts);
   await testDb.delete(refreshTokens);
@@ -40,11 +41,23 @@ export { testDb as db };
 
 // Global hooks for integration tests
 beforeAll(async () => {
+  // Refresh connection to ensure we have a fresh connection after migrations
+  refreshTestConnection();
+  
   // Verify database connection
   try {
     await testDb.execute(sql`SELECT 1`);
     console.log('✓ Test database connected');
     console.log(`✓ Using database: ${config.database.url}`);
+    
+    // Verify audit_logs table exists by trying to query it
+    try {
+      await testDb.execute(sql`SELECT 1 FROM audit_logs LIMIT 1`);
+      console.log('✓ Audit logs table exists');
+    } catch (error) {
+      console.warn('⚠ Audit logs table not found - migrations may need to be run');
+      console.warn('  Run: NODE_ENV=test npm run db:migrate');
+    }
   } catch (error) {
     console.error('✗ Test database connection failed:', error);
     throw error;
