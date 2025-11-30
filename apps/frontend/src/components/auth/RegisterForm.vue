@@ -30,28 +30,6 @@
       </div>
     </div>
 
-    <!-- Display Name Field -->
-    <div class="space-y-2">
-      <label for="displayName" class="block text-sm font-semibold text-gray-700">
-        Display Name
-      </label>
-      <div class="relative">
-        <i v-if="!modelValue.displayName" class="pi pi-user-edit absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        <InputText
-          data-ci="register-displayname-input"
-          id="displayName"
-          :model-value="modelValue.displayName"
-          @update:model-value="updateField('displayName', $event)"
-          type="text"
-          placeholder="        Enter your display name (optional)"
-          class="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-0 transition-colors"
-        />
-      </div>
-      <small class="flex items-center gap-1 text-gray-500">
-        <i class="pi pi-info-circle text-xs"></i>
-        Optional: How you want others to see your name
-      </small>
-    </div>
 
     <!-- Username Field -->
     <div class="space-y-2">
