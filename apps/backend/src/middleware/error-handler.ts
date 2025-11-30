@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { logger } from '../lib/logger.js';
+import { config } from '../lib/config.js';
 
 export class AppError extends Error {
   constructor(
@@ -19,11 +20,30 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  logger.error({
-    err,
-    url: req.url,
-    method: req.method,
-  });
+  const errorDetails = {
+    error: {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+    },
+    request: {
+      url: req.url,
+      method: req.method,
+      path: req.path,
+      query: req.query,
+      body: req.body,
+      headers: {
+        'content-type': req.headers['content-type'],
+        'user-agent': req.headers['user-agent'],
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+      },
+      ip: req.ip,
+      userId: (req as any).user?.userId,
+    },
+  };
+
+  logger.error(errorDetails, 'Request error');
 
   if (err instanceof ZodError) {
     return res.status(400).json({
@@ -40,10 +60,13 @@ export const errorHandler = (
     });
   }
 
-  // Default error
+  const errorMessage = config.isDevelopment ? err.message : 'Internal server error';
+  const errorStack = config.isDevelopment ? err.stack : undefined;
+
   return res.status(500).json({
     success: false,
-    error: 'Internal server error',
+    error: errorMessage,
+    ...(errorStack && { stack: errorStack }),
   });
 };
 
