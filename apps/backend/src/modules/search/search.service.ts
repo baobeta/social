@@ -139,24 +139,27 @@ export class SearchService {
    * @param query - Search query string
    * @param limit - Maximum number of results
    * @param offset - Number of results to skip
-   * @returns Array of post search results
+   * @returns Object with posts array and total count
    */
   async searchPosts(
     query: string,
     limit: number = 20,
     offset: number = 0
-  ): Promise<PostSearchResult[]> {
+  ): Promise<{ posts: PostSearchResult[]; total: number }> {
     if (!query || query.trim().length === 0) {
       throw new Error('Search query cannot be empty');
     }
 
-    const posts = await this.repository.searchPosts(query, limit, offset);
+    const [posts, total] = await Promise.all([
+      this.repository.searchPosts(query, limit, offset),
+      this.repository.countPosts(query),
+    ]);
 
     // Get comment counts for all posts (prevents N+1 query problem)
     const postIds = posts.map((post) => post.id);
     const commentCounts = await this.commentRepository.countByPostIds(postIds);
 
-    return posts.map((post) => ({
+    const transformedPosts = posts.map((post) => ({
       id: post.id,
       content: post.content,
       authorId: post.authorId,
@@ -172,5 +175,10 @@ export class SearchService {
       commentsCount: commentCounts.get(post.id) ?? 0,
       relevance: post.relevance,
     }));
+
+    return {
+      posts: transformedPosts,
+      total,
+    };
   }
 }

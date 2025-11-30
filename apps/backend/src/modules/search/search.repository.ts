@@ -8,26 +8,44 @@ import { users, posts, type User, type Post } from '../../db/schema/index.js';
  */
 export class SearchRepository {
   /**
-   * Escape special characters in a term for tsquery
-   * PostgreSQL tsquery special characters: : & | ! ( )
-   * We wrap terms in quotes to escape special characters
+   * Escape a single term for tsquery by removing special chars and wrapping in quotes
+   * PostgreSQL tsquery special characters: ! & | ( ) : cannot be used even in quotes
+   * We remove them before quoting to avoid syntax errors
    */
   private escapeTsQueryTerm(term: string): string {
-    if (term.length === 0) return term;
-    return `"${term.replace(/"/g, '""')}"`;
+    if (term.length === 0) return '';
+    // Remove special tsquery characters that break even when quoted
+    const cleaned = term.replace(/[!&|():]/g, '').trim();
+    if (cleaned.length === 0) return '';
+    // Escape double quotes by doubling them, then wrap entire term in quotes
+    return `"${cleaned.replace(/"/g, '""')}"`;
   }
 
   /**
-   * Convert search query to safe tsquery format
-   * Escapes special characters and adds prefix matching
+   * Convert search query to safe tsquery format with prefix matching
+   * Handles special characters by quoting each term
    */
   private buildTsQuery(query: string): string {
-    return query
-      .trim()
+    const cleaned = query.trim();
+    
+    if (cleaned.length === 0) {
+      return '""';
+    }
+    
+    // Split into terms and escape each one
+    const terms = cleaned
       .split(/\s+/)
       .filter((term) => term.length > 0)
-      .map((term) => `${this.escapeTsQueryTerm(term)}:*`)
-      .join(' & ');
+      .map((term) => this.escapeTsQueryTerm(term))
+      .filter((term) => term.length > 0)
+      .map((term) => `${term}:*`) // Add prefix matching
+      .join(' & '); // Use AND logic
+    
+    if (!terms || terms.trim().length === 0) {
+      return '""';
+    }
+    
+    return terms;
   }
 
   /**
@@ -57,14 +75,14 @@ export class SearchRepository {
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
         // Calculate relevance score using ts_rank
-        relevance: sql<number>`ts_rank(${users.searchVector}, to_tsquery('english', ${tsQuery}))`,
+        relevance: sql<number>`ts_rank(${users.searchVector}, to_tsquery('english', ${sql.raw(`'${tsQuery.replace(/'/g, "''")}'`)}))`,
       })
       .from(users)
       .where(
-        sql`${users.searchVector} @@ to_tsquery('english', ${tsQuery})`
+        sql`${users.searchVector} @@ to_tsquery('english', ${sql.raw(`'${tsQuery.replace(/'/g, "''")}'`)})`
       )
       .orderBy(
-        desc(sql`ts_rank(${users.searchVector}, to_tsquery('english', ${tsQuery}))`),
+        desc(sql`ts_rank(${users.searchVector}, to_tsquery('english', ${sql.raw(`'${tsQuery.replace(/'/g, "''")}'`)}))`),
         desc(users.createdAt)
       )
       .limit(limit)
@@ -98,6 +116,7 @@ export class SearchRepository {
     >
   > {
     const tsQuery = this.buildTsQuery(query);
+    const escapedQuery = tsQuery.replace(/'/g, "''");
 
     const result = await db
       .select({
@@ -116,8 +135,8 @@ export class SearchRepository {
         updatedAt: posts.updatedAt,
         // Combined relevance score from post content and author username
         relevance: sql<number>`
-          ts_rank(${posts.searchVector}, to_tsquery('english', ${tsQuery})) +
-          ts_rank(${users.searchVector}, to_tsquery('english', ${tsQuery})) * 0.5
+          ts_rank(${posts.searchVector}, to_tsquery('english', ${sql.raw(`'${escapedQuery}'`)})) +
+          ts_rank(${users.searchVector}, to_tsquery('english', ${sql.raw(`'${escapedQuery}'`)})) * 0.5
         `,
         // Author fields
         author: {
@@ -133,8 +152,8 @@ export class SearchRepository {
         and(
           // Search in either post content OR author username/fullname
           or(
-            sql`${posts.searchVector} @@ to_tsquery('english', ${tsQuery})`,
-            sql`${users.searchVector} @@ to_tsquery('english', ${tsQuery})`
+            sql`${posts.searchVector} @@ to_tsquery('english', ${sql.raw(`'${escapedQuery}'`)})`,
+            sql`${users.searchVector} @@ to_tsquery('english', ${sql.raw(`'${escapedQuery}'`)})`
           ),
           eq(posts.isDeleted, false) // Exclude soft-deleted posts
         )
@@ -142,8 +161,8 @@ export class SearchRepository {
       .orderBy(
         // Order by combined relevance score
         desc(sql`
-          ts_rank(${posts.searchVector}, to_tsquery('english', ${tsQuery})) +
-          ts_rank(${users.searchVector}, to_tsquery('english', ${tsQuery})) * 0.5
+          ts_rank(${posts.searchVector}, to_tsquery('english', ${sql.raw(`'${escapedQuery}'`)})) +
+          ts_rank(${users.searchVector}, to_tsquery('english', ${sql.raw(`'${escapedQuery}'`)})) * 0.5
         `),
         desc(posts.createdAt)
       )
@@ -160,6 +179,7 @@ export class SearchRepository {
    */
   async countUsers(query: string): Promise<number> {
     const tsQuery = this.buildTsQuery(query);
+    const escapedQuery = tsQuery.replace(/'/g, "''");
 
     const result = await db
       .select({
@@ -167,7 +187,7 @@ export class SearchRepository {
       })
       .from(users)
       .where(
-        sql`${users.searchVector} @@ to_tsquery('english', ${tsQuery})`
+        sql`${users.searchVector} @@ to_tsquery('english', ${sql.raw(`'${escapedQuery}'`)})`
       );
 
     return result[0]?.count ?? 0;
@@ -180,6 +200,7 @@ export class SearchRepository {
    */
   async countPosts(query: string): Promise<number> {
     const tsQuery = this.buildTsQuery(query);
+    const escapedQuery = tsQuery.replace(/'/g, "''");
 
     const result = await db
       .select({
@@ -191,8 +212,8 @@ export class SearchRepository {
         and(
           // Search in either post content OR author username/fullname
           or(
-            sql`${posts.searchVector} @@ to_tsquery('english', ${tsQuery})`,
-            sql`${users.searchVector} @@ to_tsquery('english', ${tsQuery})`
+            sql`${posts.searchVector} @@ to_tsquery('english', ${sql.raw(`'${escapedQuery}'`)})`,
+            sql`${users.searchVector} @@ to_tsquery('english', ${sql.raw(`'${escapedQuery}'`)})`
           ),
           eq(posts.isDeleted, false)
         )

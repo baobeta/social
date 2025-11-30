@@ -136,19 +136,20 @@ export class SearchController {
       const parsedLimit = Math.min(parseInt(limit as string, 10) || 20, 100);
       const parsedOffset = Math.max(parseInt(offset as string, 10) || 0, 0);
 
-      const results = await this.service.searchPosts(q, parsedLimit, parsedOffset);
+      const { posts, total } = await this.service.searchPosts(q, parsedLimit, parsedOffset);
 
-      logger.info({ query: q, count: results.length }, 'Post search performed');
+      logger.info({ query: q, count: posts.length, total }, 'Post search performed');
 
       res.status(200).json({
         success: true,
         data: {
           query: q,
-          posts: results,
-          count: results.length,
+          posts,
+          count: posts.length,
           pagination: {
             limit: parsedLimit,
             offset: parsedOffset,
+            total,
           },
         },
       });

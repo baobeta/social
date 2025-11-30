@@ -211,22 +211,26 @@ describe('SearchService - Unit Tests', () => {
   describe('searchPosts', () => {
     it('should search posts only', async () => {
       mockRepository.searchPosts.mockResolvedValue([mockPost]);
+      mockRepository.countPosts.mockResolvedValue(1);
 
       const result = await service.searchPosts('typescript', 20, 0);
 
       expect(mockRepository.searchPosts).toHaveBeenCalledWith('typescript', 20, 0);
-      expect(result).toHaveLength(1);
-      expect(result[0].content).toContain('TypeScript');
+      expect(mockRepository.countPosts).toHaveBeenCalledWith('typescript');
+      expect(result.posts).toHaveLength(1);
+      expect(result.posts[0].content).toContain('TypeScript');
+      expect(result.total).toBe(1);
     });
 
     it('should include author information', async () => {
       mockRepository.searchPosts.mockResolvedValue([mockPost]);
+      mockRepository.countPosts.mockResolvedValue(1);
 
       const result = await service.searchPosts('typescript', 20, 0);
 
-      expect(result[0].author).toBeDefined();
-      expect(result[0].author.username).toBe('johndoe');
-      expect(result[0].author.fullName).toBe('John Doe');
+      expect(result.posts[0].author).toBeDefined();
+      expect(result.posts[0].author.username).toBe('johndoe');
+      expect(result.posts[0].author.fullName).toBe('John Doe');
     });
 
     it('should throw error for empty query', async () => {
