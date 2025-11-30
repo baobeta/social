@@ -20,6 +20,7 @@
     "pinia": "^2.3.0",
     "primevue": "^4.3.0",
     "primeicons": "^7.0.0",
+    "@primevue/themes": "^4.5.0",
     "@vueuse/core": "^11.3.0",
     "axios": "^1.7.9",
     "zod": "^3.24.1"

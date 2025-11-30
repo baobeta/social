@@ -92,15 +92,32 @@ cp apps/frontend/.env.example apps/frontend/.env
 
 ### Development
 
-#### Option 1: Run with Docker Compose
+#### Option 1: Run with Docker Compose (Recommended - One Command Setup)
 
 ```bash
-# Start all services (PostgreSQL, Redis, Backend, Frontend)
-npm run docker:up
+# Start all services (PostgreSQL, Redis, Backend, Frontend Vue, Frontend React)
+# This automatically runs migrations and seeds the database
+docker-compose up
+
+# Or run in background
+docker-compose up -d
 
 # Stop all services
-npm run docker:down
+docker-compose down
 ```
+
+**What gets set up automatically:**
+- ✅ PostgreSQL database on port `5432`
+- ✅ Redis cache on port `6379`
+- ✅ Backend API on port `3000` (with auto-migration and seeding)
+- ✅ Frontend Vue on port `5173`
+- ✅ Frontend React on port `5174`
+
+**Default admin user:**
+- Username: `admin`
+- Password: `admin@123`
+
+See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for detailed Docker setup instructions.
 
 #### Option 2: Run locally
 

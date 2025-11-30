@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache postgresql-client
+
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY apps/backend/package*.json ./apps/backend/
+COPY apps/backend/tsconfig*.json ./apps/backend/
+COPY apps/backend/tsconfig.build.json ./apps/backend/
+COPY apps/backend/docker-entrypoint.sh ./apps/backend/
+
+RUN npm ci --workspaces --if-present
+
+COPY apps/backend ./apps/backend
+
+WORKDIR /app
+
+RUN chmod +x apps/backend/docker-entrypoint.sh
+
+EXPOSE 3000
+
+ENTRYPOINT ["apps/backend/docker-entrypoint.sh"]
+
