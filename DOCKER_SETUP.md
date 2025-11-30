@@ -1,10 +1,10 @@
 # Docker Setup Guide
 
-This guide explains how to set up the entire application stack with a single command using Docker Compose.
+Complete guide for running the Social Application with Docker Compose.
 
 ## Quick Start
 
-Run everything with one command:
+Run everything with a single command:
 
 ```bash
 docker compose up
@@ -15,6 +15,8 @@ Or run in detached mode (background):
 ```bash
 docker compose up -d
 ```
+
+That's it! All services will start automatically.
 
 ## What Gets Set Up
 

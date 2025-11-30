@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Frontend Vue application for social media",
+  "description": "Frontend Vue application for social platform",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",

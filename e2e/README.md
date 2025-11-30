@@ -1,6 +1,6 @@
 # E2E Testing with Playwright
 
-This directory contains end-to-end (E2E) tests for the social media application using Playwright.
+This directory contains end-to-end (E2E) tests for the social application using Playwright.
 
 ## 📁 Directory Structure
 

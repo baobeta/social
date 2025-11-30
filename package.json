@@ -2,7 +2,7 @@
   "name": "social-media-app",
   "version": "1.0.0",
   "private": true,
-  "description": "A full-stack social media application with Vue and Express",
+  "description": "A full-stack social application with Vue and Express",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -35,7 +35,7 @@
     "db:studio": "npm run db:studio -w @social/backend"
   },
   "keywords": [
-    "social-media",
+    "social",
     "vue",
     "express",
     "typescript",

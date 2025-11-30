@@ -72,7 +72,7 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, _from, next) => {
-  document.title = (to.meta.title as string) || 'Social Media App';
+  document.title = (to.meta.title as string) || 'Social App';
 
   const authStore = useAuthStore();
   const requiresAuth = to.meta.requiresAuth;

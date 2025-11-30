@@ -1,6 +1,37 @@
-# Social Media Application
+# Social Application
 
-A full-stack social media web application with user authentication, posts, comments, and replies.
+A full-stack social web application built with modern technologies. Features user authentication, posts, comments, and replies with a clean, scalable architecture.
+
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Development](#development)
+- [Project Structure](#project-structure)
+- [API Documentation](#api-documentation)
+- [Testing](#testing)
+- [Database Management](#database-management)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+- 🔐 **User Authentication** - Registration, login, and session management
+- 📝 **Posts** - Create, edit, delete, and view posts in a global timeline
+- 💬 **Comments** - Comment on posts with threaded replies
+- 🔍 **Search** - Full-text search for users and posts
+- 👥 **User Profiles** - View and edit user profiles
+- 🛡️ **Admin Features** - Role-based access control with admin capabilities
+- 🗑️ **Soft Deletion** - Posts and comments support soft deletion
+- ⚡ **Performance** - Optimized with Redis caching and database indexing
+- 🔒 **Security** - Rate limiting, input validation, and secure authentication
 
 ## Tech Stack
 
@@ -9,18 +40,183 @@ A full-stack social media web application with user authentication, posts, comme
 - **Framework**: Express.js
 - **Language**: TypeScript
 - **ORM**: Drizzle ORM
-- **Database**: PostgreSQL
-- **Cache**: Redis
+- **Database**: PostgreSQL 15+
+- **Cache**: Redis 7+
 - **Testing**: Vitest + Testcontainers
 
 ### Frontend
-- **Framework**: Vue 3 (Composition API)
+- **Vue 3** (Composition API) - Primary frontend
+- **React 18** - Alternative frontend implementation
 - **Build Tool**: Vite
-- **UI Library**: PrimeVue
+- **UI Library**: PrimeVue (Vue), Tailwind CSS
+- **State Management**: Pinia (Vue), React Query (React)
 - **Styling**: Tailwind CSS
-- **State Management**: Pinia
-- **Utilities**: VueUse
-- **Testing**: Vitest + Vue Test Utils
+- **Testing**: Vitest
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js** 20.0.0 or higher
+- **npm** 10.0.0 or higher
+- **Docker** and **Docker Compose** (recommended)
+- **PostgreSQL** 15+ (if not using Docker)
+- **Redis** 7+ (if not using Docker)
+
+### One-Command Setup with Docker
+
+The easiest way to get started:
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd social
+
+# Start all services (PostgreSQL, Redis, Backend, Frontends)
+docker compose up
+```
+
+This automatically:
+- ✅ Sets up PostgreSQL and Redis
+- ✅ Runs database migrations
+- ✅ Seeds admin user (username: `admin`, password: `admin@123`)
+- ✅ Starts backend API on port 3000
+- ✅ Starts Vue frontend on port 5173
+- ✅ Starts React frontend on port 5174
+
+Access the application:
+- **Vue Frontend**: http://localhost:5173
+- **React Frontend**: http://localhost:5174
+- **Backend API**: http://localhost:3000/api
+- **Health Check**: http://localhost:3000/health
+
+See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for detailed Docker instructions.
+
+## Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd social
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Environment Setup
+
+#### Backend Environment
+
+Create `apps/backend/.env`:
+
+```bash
+cp apps/backend/.env.example apps/backend/.env
+```
+
+Edit `apps/backend/.env` with your configuration:
+
+```env
+NODE_ENV=development
+PORT=3000
+HOST=0.0.0.0
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/social_media
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRES_IN=7d
+CORS_ORIGIN=http://localhost:5173,http://localhost:5174
+```
+
+#### Frontend Environment (Optional)
+
+Create `apps/frontend/.env` (optional, defaults to `/api`):
+
+```env
+VITE_API_BASE_URL=http://localhost:3000/api
+```
+
+### 4. Database Setup
+
+#### Using Docker (Recommended)
+
+```bash
+# Start PostgreSQL and Redis
+docker compose up postgres redis -d
+```
+
+#### Using Local PostgreSQL
+
+```bash
+# Create database
+createdb social_media
+
+# Or using psql
+psql -U postgres -c "CREATE DATABASE social_media;"
+```
+
+### 5. Run Migrations
+
+```bash
+npm run db:migrate
+```
+
+### 6. Seed Database (Optional)
+
+```bash
+npm run db:seed
+```
+
+This creates an admin user:
+- **Username**: `admin`
+- **Password**: `admin@123`
+
+## Development
+
+### Start Development Servers
+
+#### Option 1: Run All Services
+
+```bash
+npm run dev
+```
+
+#### Option 2: Run Services Individually
+
+In separate terminals:
+
+```bash
+# Backend (http://localhost:3000)
+npm run dev:backend
+
+# Vue Frontend (http://localhost:5173)
+npm run dev:frontend
+
+# React Frontend (http://localhost:5174)
+npm run dev:frontend-react
+```
+
+### Development Workflow
+
+1. **Make changes** to source code
+2. **Hot reload** automatically applies changes
+3. **Run tests** to verify changes
+4. **Check linting** with `npm run lint`
+
+### Code Quality
+
+```bash
+# Type checking
+npm run typecheck
+
+# Linting
+npm run lint
+
+# Format code (if configured)
+npm run format
+```
 
 ## Project Structure
 
@@ -29,144 +225,193 @@ social/
 ├── apps/
 │   ├── backend/              # Express API server
 │   │   ├── src/
-│   │   │   ├── modules/      # Feature modules (users, posts, comments)
+│   │   │   ├── modules/      # Feature modules (auth, users, posts, comments)
 │   │   │   ├── db/           # Database schemas, migrations, seeds
 │   │   │   ├── lib/          # Utilities and helpers
 │   │   │   ├── middleware/   # Express middleware
 │   │   │   └── index.ts      # Application entry point
-│   │   ├── Dockerfile
+│   │   ├── Dockerfile.dev    # Development Dockerfile
 │   │   └── package.json
 │   │
-│   └── frontend/             # Vue application
+│   ├── frontend/             # Vue 3 application
+│   │   ├── src/
+│   │   │   ├── components/   # Reusable Vue components
+│   │   │   ├── views/        # Route pages
+│   │   │   ├── stores/       # Pinia stores
+│   │   │   ├── composables/  # Vue composables
+│   │   │   ├── services/     # API services
+│   │   │   └── router/       # Vue Router config
+│   │   └── package.json
+│   │
+│   └── frontend-react/       # React application
 │       ├── src/
-│       │   ├── components/   # Reusable Vue components
-│       │   ├── views/        # Route pages
-│       │   ├── stores/       # Pinia stores
-│       │   ├── composables/  # Vue composables
-│       │   ├── services/     # API services
-│       │   └── router/       # Vue Router config
-│       ├── Dockerfile
-│       ├── nginx.conf
+│       │   ├── components/   # React components
+│       │   ├── views/       # Page components
+│       │   ├── contexts/    # React contexts
+│       │   ├── services/    # API services
+│       │   └── types/       # TypeScript types
 │       └── package.json
 │
-├── packages/                 # Shared packages (future)
+├── docs/                     # Documentation
+├── e2e/                      # End-to-end tests
 ├── docker-compose.yml        # Docker orchestration
 ├── package.json              # Root workspace config
 └── README.md
 ```
 
-## Getting Started
+## API Documentation
 
-### Prerequisites
+The backend API follows REST conventions and is available at `http://localhost:3000/api`.
 
-- Node.js 20+
-- npm 10+
-- Docker & Docker Compose (optional)
+### Base URL
 
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd social
+```
+http://localhost:3000/api
 ```
 
-2. Install dependencies:
-```bash
-npm install
+### Authentication
+
+Authentication uses HttpOnly cookies. Include credentials in requests:
+
+```javascript
+fetch('http://localhost:3000/api/auth/login', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username, password })
+})
 ```
 
-3. Set up environment variables:
+### Endpoints
 
-Backend:
+#### Health Check
+- `GET /health` - Server health status
+
+#### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `POST /api/auth/logout` - Logout user
+- `GET /api/auth/me` - Get current user
+
+#### Users
+- `GET /api/users/me` - Get current user profile
+- `PATCH /api/users/me` - Update current user profile
+
+#### Posts
+- `GET /api/posts` - Get global timeline (paginated)
+- `POST /api/posts` - Create new post
+- `GET /api/posts/:id` - Get post by ID
+- `PATCH /api/posts/:id` - Update post
+- `DELETE /api/posts/:id` - Delete post (soft delete)
+
+#### Comments
+- `GET /api/posts/:postId/comments` - Get comments for a post
+- `POST /api/posts/:postId/comments` - Create comment on post
+- `GET /api/comments/:id` - Get comment by ID
+- `PATCH /api/comments/:id` - Update comment
+- `DELETE /api/comments/:id` - Delete comment (soft delete)
+- `POST /api/comments/:id/replies` - Reply to comment
+
+#### Search
+- `GET /api/search?q=query` - Unified search (users and posts)
+- `GET /api/search/users?q=query` - Search users only
+- `GET /api/search/posts?q=query` - Search posts only
+
+#### Audit Logs (Admin Only)
+- `GET /api/audit-logs` - Get audit logs
+
+For detailed API documentation, see:
+- [Backend API Documentation](./apps/backend/docs/)
+- [API Routes Reference](./apps/frontend/API_ROUTES.md)
+
+## Testing
+
+### Run All Tests
+
 ```bash
-cp apps/backend/.env.example apps/backend/.env
-# Edit apps/backend/.env with your configuration
+npm test
 ```
 
-Frontend:
-```bash
-cp apps/frontend/.env.example apps/frontend/.env
-# Edit apps/frontend/.env with your configuration
-```
-
-### Development
-
-#### Option 1: Run with Docker Compose (Recommended - One Command Setup)
+### Run Tests by Workspace
 
 ```bash
-# Start all services (PostgreSQL, Redis, Backend, Frontend Vue, Frontend React)
-# This automatically runs migrations and seeds the database
-docker-compose up
+# Backend tests
+npm run test:backend
 
-# Or run in background
-docker-compose up -d
-
-# Stop all services
-docker-compose down
+# Frontend tests
+npm run test:frontend
 ```
 
-**What gets set up automatically:**
-- ✅ PostgreSQL database on port `5432`
-- ✅ Redis cache on port `6379`
-- ✅ Backend API on port `3000` (with auto-migration and seeding)
-- ✅ Frontend Vue on port `5173`
-- ✅ Frontend React on port `5174`
+### Run Tests with Coverage
 
-**Default admin user:**
-- Username: `admin`
-- Password: `admin@123`
-
-See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for detailed Docker setup instructions.
-
-#### Option 2: Run locally
-
-1. Start PostgreSQL and Redis:
 ```bash
-docker-compose up postgres redis -d
+npm run test -- --coverage
 ```
 
-2. Run database migrations:
+### Watch Mode
+
+```bash
+npm run test:watch
+```
+
+### End-to-End Tests
+
+```bash
+# Setup E2E database
+npm run test:e2e:setup
+
+# Run E2E tests
+npm run test:e2e
+
+# Run with UI
+npm run test:e2e:ui
+```
+
+See [TESTING_STANDARDS.md](./docs/TESTING_STANDARDS.md) for testing guidelines.
+
+## Database Management
+
+### Generate Migration
+
+After changing the schema:
+
+```bash
+npm run db:generate
+```
+
+### Run Migrations
+
 ```bash
 npm run db:migrate
 ```
 
-3. (Optional) Seed the database:
+### Seed Database
+
 ```bash
 npm run db:seed
 ```
 
-4. Start development servers:
+### Database Studio
 
-In separate terminals:
-```bash
-# Backend (http://localhost:3000)
-npm run dev:backend
-
-# Frontend (http://localhost:5173)
-npm run dev:frontend
-```
-
-Or run both together:
-```bash
-npm run dev
-```
-
-### Testing
+Open Drizzle Studio to browse the database:
 
 ```bash
-# Run all tests
-npm test
-
-# Run backend tests
-npm run test:backend
-
-# Run frontend tests
-npm run test:frontend
-
-# Run tests with coverage
-npm run test -- --coverage
+npm run db:studio
 ```
+
+### Push Schema (Development Only)
+
+For rapid development, push schema changes directly:
+
+```bash
+npm run db:push
+```
+
+**Warning**: Only use in development. Always use migrations in production.
+
+See [DRIZZLE_GUIDE.md](./docs/DRIZZLE_GUIDE.md) for detailed database documentation.
+
+## Deployment
 
 ### Building for Production
 
@@ -179,44 +424,52 @@ npm run build:backend
 npm run build:frontend
 ```
 
-### Database Management
+### Production Environment Variables
+
+Ensure all required environment variables are set:
+
+- `NODE_ENV=production`
+- `DATABASE_URL` - Production database URL
+- `REDIS_URL` - Production Redis URL
+- `JWT_SECRET` - Strong secret key
+- `CORS_ORIGIN` - Allowed frontend origins
+
+### Docker Production Build
 
 ```bash
-# Generate new migration
-npm run db:generate
-
-# Run migrations
-npm run db:migrate
-
-# Push schema changes (development only)
-npm run db:push
-
-# Open Drizzle Studio
-npm run db:studio
-
-# Seed database
-npm run db:seed
+docker compose -f docker-compose.prod.yml up
 ```
 
-## API Documentation
+## Contributing
 
-The backend API follows REST conventions and is available at `http://localhost:3000/api/v1`.
+We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
-### Health Check
-- `GET /health` - Server health status
+### Quick Contribution Guide
 
-## Features
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests (`npm test`)
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
-- User registration and authentication
-- Create, edit, and delete posts
-- Comment on posts
-- Reply to posts and comments
-- Global timeline view
-- Search functionality
-- Soft deletion with admin capabilities
-- Role-based access control
-- Rate limiting
-- Session management with Redis
+### Development Guidelines
+
+- Follow the [Backend Engineering Checklist](./docs/)
+- Follow the [Vue Development Rules](./docs/)
+- Write tests for new features
+- Update documentation as needed
+- Follow the existing code style
+
+## Documentation
+
+- [Development Guide](./docs/DEVELOPMENT.md)
+- [Docker Setup](./DOCKER_SETUP.md)
+- [Database Schema](./docs/DATABASE_SCHEMA.md)
+- [API Documentation](./apps/backend/docs/)
+- [Testing Standards](./docs/TESTING_STANDARDS.md)
+- [Technical Design](./docs/TECHNICAL_DESIGN.md)
 
 ## Architecture Principles
 
@@ -233,7 +486,8 @@ The backend API follows REST conventions and is available at `http://localhost:3
 
 ### Frontend
 - Composition API with `<script setup>` syntax
-- Pinia for state management
+- Pinia for state management (Vue)
+- React Query for data fetching (React)
 - Composables for reusable logic
 - API service layer separation
 - Type-safe routing
@@ -250,25 +504,51 @@ The backend API follows REST conventions and is available at `http://localhost:3
 - SQL injection prevention (via Drizzle ORM)
 - Input validation with Zod
 - No sensitive data in logs
+- HttpOnly cookies for session management
+
+See [SECURITY.md](./SECURITY.md) for security details.
+
+## Troubleshooting
+
+### Common Issues
+
+#### Port Already in Use
+```bash
+# Find process using port
+lsof -i :3000
+
+# Kill process
+kill -9 <PID>
+```
+
+#### Database Connection Issues
+```bash
+# Check PostgreSQL is running
+pg_isready
+
+# Check connection string
+echo $DATABASE_URL
+```
+
+#### Migration Errors
+```bash
+# Check migration files exist
+ls -la apps/backend/src/db/migrations/
+
+# Verify meta folder
+ls -la apps/backend/src/db/migrations/meta/
+```
+
+### Getting Help
+
+- Check [Documentation](./docs/)
+- Review [Troubleshooting Guide](./DOCKER_SETUP.md#troubleshooting)
+- Open an issue on GitHub
 
 ## License
 
-MIT
+Licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for details.
 
+## Acknowledgments
 
-
-<!-- NOTE -->
-create database
-```
-createdb social_media 2>&1 || echo "Database might already exist, checking..."
-```
-
-check database info
-```
-psql -l | grep social_media
-```
-
-run migration
-```
-npm run db:migrate
-```
+Built with modern web technologies and best practices for scalability and maintainability.

@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright E2E Test Configuration
  *
- * This configuration sets up end-to-end testing for the social media application.
+ * This configuration sets up end-to-end testing for the social application.
  * Tests run against both frontend and backend services.
  *
  * Environment Variables:

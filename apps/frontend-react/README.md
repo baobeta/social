@@ -1,6 +1,6 @@
 # Frontend React
 
-React frontend application for the social media platform, built with React Query for optimized data fetching and caching.
+React frontend application for the social platform, built with React Query for optimized data fetching and caching.
 
 ## Features
 

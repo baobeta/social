@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Frontend React application for social media",
+  "description": "Frontend React application for social platform",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
