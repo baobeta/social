@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
-  const { data: userData, isLoading, refetch } = useQuery({
+  const { data: userData, isLoading, } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
       try {
