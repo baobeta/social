@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1764319951904,
+      "tag": "0000_groovy_sharon_ventura",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1764336433876,
+      "tag": "0001_certain_scourge",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1764349017711,
+      "tag": "0002_curved_colossus",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1764467830238,
+      "tag": "0003_demonic_la_nuit",
+      "breakpoints": true
+    }
+  ]
+}

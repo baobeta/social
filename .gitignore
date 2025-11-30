@@ -64,8 +64,8 @@ temp/
 *.sqlite3
 *.db
 
-# Drizzle ORM - keep migrations, ignore meta snapshots
-apps/backend/src/db/migrations/meta/
+# Drizzle ORM - keep migrations and meta (needed for migration tracking)
+# apps/backend/src/db/migrations/meta/ - REMOVED: meta folder is needed for migrations
 **/drizzle/
 
 # Docker

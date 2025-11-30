@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+import { existsSync } from 'fs';
 
 // Load environment variables BEFORE importing config
 const __filename = fileURLToPath(import.meta.url);
@@ -20,7 +21,26 @@ const runMigrations = async () => {
   logger.info('Running migrations...');
 
   try {
-    await migrate(db, { migrationsFolder: './src/db/migrations' });
+    const migrationsPath = resolve(__dirname, './migrations');
+    const metaPath = resolve(migrationsPath, './meta/_journal.json');
+    
+    logger.info({ 
+      migrationsPath, 
+      metaPath,
+      pathExists: existsSync(migrationsPath),
+      metaExists: existsSync(metaPath),
+      cwd: process.cwd(),
+      __dirname 
+    }, 'Migration debug info');
+    
+    if (!existsSync(migrationsPath)) {
+      throw new Error(`Migrations folder not found at: ${migrationsPath}. Current directory: ${process.cwd()}`);
+    }
+    if (!existsSync(metaPath)) {
+      throw new Error(`Migration journal not found at: ${metaPath}. Make sure migrations are generated.`);
+    }
+    
+    await migrate(db, { migrationsFolder: migrationsPath });
     logger.info('Migrations completed successfully');
   } catch (error) {
     console.error('Full migration error:', error);
