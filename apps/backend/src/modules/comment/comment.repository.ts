@@ -286,6 +286,46 @@ export class CommentRepository {
   }
 
   /**
+   * Count replies for multiple comments in a single query (prevents N+1)
+   * @param commentIds - Array of parent comment IDs
+   * @returns Map of commentId to reply count
+   */
+  async countRepliesByCommentIds(commentIds: string[]): Promise<Map<string, number>> {
+    if (commentIds.length === 0) {
+      return new Map();
+    }
+
+    const results = await this.db
+      .select({
+        parentCommentId: comments.parentCommentId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(comments)
+      .where(
+        and(
+          inArray(comments.parentCommentId, commentIds),
+          eq(comments.isDeleted, false)
+        )
+      )
+      .groupBy(comments.parentCommentId);
+
+    const countMap = new Map<string, number>();
+    for (const result of results) {
+      if (result.parentCommentId) {
+        countMap.set(result.parentCommentId, result.count);
+      }
+    }
+
+    for (const commentId of commentIds) {
+      if (!countMap.has(commentId)) {
+        countMap.set(commentId, 0);
+      }
+    }
+
+    return countMap;
+  }
+
+  /**
    * Update comment content
    * @param id - Comment ID
    * @param content - New content

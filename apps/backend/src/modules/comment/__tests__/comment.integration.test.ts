@@ -371,10 +371,16 @@ describe('CommentService - Integration Tests', () => {
         return await svc.getCommentsByPostId(post.id, 20, 0);
       });
 
-      // Query count should be the same base queries regardless of comment count
-      // Note: replyCount queries will scale with comment count (could be optimized)
-      expect(queries5Comments).toBeLessThanOrEqual(10); // Base + count per comment
-      expect(queries20Comments).toBeLessThanOrEqual(30); // Base + count per comment
+      // Query count should be the same regardless of comment count
+      // This proves we're using batch queries, not separate queries per comment
+      expect(queries5Comments).toBe(queries20Comments);
+
+      // Should be exactly 3 queries:
+      // 1. SELECT comments with JOIN users (getByPostId)
+      // 2. SELECT COUNT(*) grouped by parentCommentId (countRepliesByCommentIds)
+      // 3. SELECT COUNT(*) for pagination total (countByPostId)
+      expect(queries5Comments).toBe(3);
+      expect(queries20Comments).toBe(3);
     });
 
     it('should fetch single comment with author in constant queries', async () => {

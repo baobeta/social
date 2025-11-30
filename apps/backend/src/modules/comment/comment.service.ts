@@ -218,23 +218,25 @@ export class CommentService {
       safeOffset
     );
 
-    // Get reply count for each comment (could be optimized with a single query)
-    const comments: CommentResponse[] = await Promise.all(
-      commentsData.map(async (comment) => ({
-        id: comment.id,
-        content: comment.content,
-        author: comment.author,
-        postId: comment.postId,
-        parentCommentId: comment.parentCommentId,
-        isDeleted: comment.isDeleted,
-        isEdited: comment.isEdited,
-        editedAt: comment.editedAt,
-        editedByAdmin: comment.isEdited && comment.editedBy !== null && comment.editedBy !== comment.authorId,
-        createdAt: comment.createdAt,
-        updatedAt: comment.updatedAt,
-        replyCount: await this.repository.countReplies(comment.id),
-      }))
-    );
+    // Get reply counts for all comments in a single query (prevents N+1)
+    const commentIds = commentsData.map(comment => comment.id);
+    const replyCounts = await this.repository.countRepliesByCommentIds(commentIds);
+
+    // Map comments with their reply counts
+    const comments: CommentResponse[] = commentsData.map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      author: comment.author,
+      postId: comment.postId,
+      parentCommentId: comment.parentCommentId,
+      isDeleted: comment.isDeleted,
+      isEdited: comment.isEdited,
+      editedAt: comment.editedAt,
+      editedByAdmin: comment.isEdited && comment.editedBy !== null && comment.editedBy !== comment.authorId,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      replyCount: replyCounts.get(comment.id) ?? 0,
+    }));
 
     // Get total count for pagination
     const total = await this.repository.countByPostId(postId);
