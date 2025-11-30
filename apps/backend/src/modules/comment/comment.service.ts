@@ -70,6 +70,20 @@ export class CommentService {
   }
 
   /**
+   * Invalidate post cache (so comment count gets recalculated)
+   */
+  private async invalidatePostCache(postId: string): Promise<void> {
+    await cacheService.del(`post:${postId}`);
+  }
+
+  /**
+   * Invalidate all timeline cache entries (posts include comment counts)
+   */
+  private async invalidateTimelineCache(): Promise<void> {
+    await cacheService.delPattern('timeline:*');
+  }
+
+  /**
    * Create a new comment or reply
    * @param postId - Post ID
    * @param userId - Author user ID
@@ -132,8 +146,12 @@ export class CommentService {
     // Cache the created comment
     await cacheService.set(this.getCommentCacheKey(comment.id), response.comment, this.CACHE_TTL);
 
-    // Invalidate comments list cache for the post
-    await this.invalidateCommentsListCache(postId);
+    // Invalidate caches
+    await Promise.all([
+      this.invalidateCommentsListCache(postId),
+      this.invalidatePostCache(postId),
+      this.invalidateTimelineCache(),
+    ]);
 
     // If this is a reply, also invalidate the parent's replies cache
     if (data.parentCommentId) {
@@ -434,6 +452,8 @@ export class CommentService {
     await Promise.all([
       this.invalidateCommentCache(commentId),
       this.invalidateCommentsListCache(existingComment.postId),
+      this.invalidatePostCache(existingComment.postId),
+      this.invalidateTimelineCache(),
     ]);
 
     // If this is a reply, also invalidate the parent's replies cache
