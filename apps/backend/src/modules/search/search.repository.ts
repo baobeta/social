@@ -8,6 +8,29 @@ import { users, posts, type User, type Post } from '../../db/schema/index.js';
  */
 export class SearchRepository {
   /**
+   * Escape special characters in a term for tsquery
+   * PostgreSQL tsquery special characters: : & | ! ( )
+   * We wrap terms in quotes to escape special characters
+   */
+  private escapeTsQueryTerm(term: string): string {
+    if (term.length === 0) return term;
+    return `"${term.replace(/"/g, '""')}"`;
+  }
+
+  /**
+   * Convert search query to safe tsquery format
+   * Escapes special characters and adds prefix matching
+   */
+  private buildTsQuery(query: string): string {
+    return query
+      .trim()
+      .split(/\s+/)
+      .filter((term) => term.length > 0)
+      .map((term) => `${this.escapeTsQueryTerm(term)}:*`)
+      .join(' & ');
+  }
+
+  /**
    * Search users by username or full name using full-text search
    * @param query - Search query string
    * @param limit - Maximum number of results
@@ -19,13 +42,7 @@ export class SearchRepository {
     limit: number,
     offset: number
   ): Promise<Array<User & { relevance: number }>> {
-    // Convert search query to tsquery format
-    // Replace spaces with '&' for AND search, add ':*' for prefix matching
-    const tsQuery = query
-      .trim()
-      .split(/\s+/)
-      .map((term) => `${term}:*`)
-      .join(' & ');
+    const tsQuery = this.buildTsQuery(query);
 
     const result = await db
       .select({
@@ -34,6 +51,7 @@ export class SearchRepository {
         password: users.password,
         fullName: users.fullName,
         displayName: users.displayName,
+        initials: users.initials,
         role: users.role,
         searchVector: users.searchVector,
         createdAt: users.createdAt,
@@ -79,13 +97,7 @@ export class SearchRepository {
       }
     >
   > {
-    // Convert search query to tsquery format
-    // Replace spaces with '&' for AND search, add ':*' for prefix matching
-    const tsQuery = query
-      .trim()
-      .split(/\s+/)
-      .map((term) => `${term}:*`)
-      .join(' & ');
+    const tsQuery = this.buildTsQuery(query);
 
     const result = await db
       .select({
@@ -147,11 +159,7 @@ export class SearchRepository {
    * @returns Count of matching users
    */
   async countUsers(query: string): Promise<number> {
-    const tsQuery = query
-      .trim()
-      .split(/\s+/)
-      .map((term) => `${term}:*`)
-      .join(' & ');
+    const tsQuery = this.buildTsQuery(query);
 
     const result = await db
       .select({
@@ -171,11 +179,7 @@ export class SearchRepository {
    * @returns Count of matching posts
    */
   async countPosts(query: string): Promise<number> {
-    const tsQuery = query
-      .trim()
-      .split(/\s+/)
-      .map((term) => `${term}:*`)
-      .join(' & ');
+    const tsQuery = this.buildTsQuery(query);
 
     const result = await db
       .select({
