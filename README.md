@@ -367,7 +367,6 @@ npm run test:e2e
 npm run test:e2e:ui
 ```
 
-See [TESTING_STANDARDS.md](./docs/TESTING_STANDARDS.md) for testing guidelines.
 
 ## Database Management
 
@@ -409,7 +408,6 @@ npm run db:push
 
 **Warning**: Only use in development. Always use migrations in production.
 
-See [DRIZZLE_GUIDE.md](./docs/DRIZZLE_GUIDE.md) for detailed database documentation.
 
 ## Deployment
 
@@ -440,9 +438,6 @@ Ensure all required environment variables are set:
 docker compose -f docker-compose.prod.yml up
 ```
 
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ### Quick Contribution Guide
 
@@ -456,20 +451,9 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 
 ### Development Guidelines
 
-- Follow the [Backend Engineering Checklist](./docs/)
-- Follow the [Vue Development Rules](./docs/)
 - Write tests for new features
 - Update documentation as needed
 - Follow the existing code style
-
-## Documentation
-
-- [Development Guide](./docs/DEVELOPMENT.md)
-- [Docker Setup](./DOCKER_SETUP.md)
-- [Database Schema](./docs/DATABASE_SCHEMA.md)
-- [API Documentation](./apps/backend/docs/)
-- [Testing Standards](./docs/TESTING_STANDARDS.md)
-- [Technical Design](./docs/TECHNICAL_DESIGN.md)
 
 ## Architecture Principles
 
@@ -506,8 +490,6 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 - No sensitive data in logs
 - HttpOnly cookies for session management
 
-See [SECURITY.md](./SECURITY.md) for security details.
-
 ## Troubleshooting
 
 ### Common Issues
@@ -538,12 +520,6 @@ ls -la apps/backend/src/db/migrations/
 # Verify meta folder
 ls -la apps/backend/src/db/migrations/meta/
 ```
-
-### Getting Help
-
-- Check [Documentation](./docs/)
-- Review [Troubleshooting Guide](./DOCKER_SETUP.md#troubleshooting)
-- Open an issue on GitHub
 
 ## License
 
