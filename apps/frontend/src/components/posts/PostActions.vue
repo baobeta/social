@@ -11,6 +11,9 @@
       @click="handleEdit"
       :disabled="loading"
       class="hover:bg-gray-100"
+      :class="{
+      'bg-slate-400': loading,
+      }"
       aria-label="Edit post"
     />
     <Button
@@ -24,6 +27,9 @@
       @click="handleDelete"
       :disabled="loading"
       class="hover:bg-red-50"
+      :class="{
+      'bg-slate-400': loading,
+      }"
       aria-label="Delete post"
     />
   </div>
