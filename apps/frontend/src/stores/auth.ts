@@ -78,7 +78,14 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await authService.updateProfile(data);
+      const profileData: { fullName?: string; displayName?: string | null } = {};
+      if (data.fullName !== undefined) {
+        profileData.fullName = data.fullName;
+      }
+      if (data.displayName !== undefined) {
+        profileData.displayName = data.displayName;
+      }
+      const response = await authService.updateProfile(profileData);
       user.value = response.data.user;
     } catch (err: any) {
       error.value = err.response?.data?.error || 'Update failed';

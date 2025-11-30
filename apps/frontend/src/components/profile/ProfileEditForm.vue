@@ -19,7 +19,7 @@
           id="fullName"
           data-ci="profile-fullname-input"
           :model-value="fullName"
-          @update:model-value="emit('update:fullName', $event)"
+          @update:model-value="emit('update:fullName', $event || '')"
           type="text"
           required
           class="w-full"

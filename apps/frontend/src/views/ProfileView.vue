@@ -20,7 +20,7 @@
           :error="error"
           :success-message="successMessage"
           @submit="handleUpdate"
-          @cancel="$router.push('/timeline')"
+          @cancel="handleCancel"
           @clear-error="error = null"
           @clear-success="successMessage = null"
         />
@@ -53,6 +53,10 @@ const successMessage = ref<string | null>(null);
 const hasChanges = computed(() => {
   return fullName.value !== authStore.user?.fullName;
 });
+
+function handleCancel() {
+  router.push('/timeline');
+}
 
 async function handleUpdate() {
   if (!hasChanges.value) return;

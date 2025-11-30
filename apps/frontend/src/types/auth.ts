@@ -36,5 +36,6 @@ export interface AuthResponse {
 }
 
 export interface UpdateProfileData {
-  fullName: string;
+  fullName?: string;
+  displayName?: string | null;
 }

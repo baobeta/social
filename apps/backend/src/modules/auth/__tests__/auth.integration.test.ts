@@ -6,15 +6,21 @@ import authRoutes from '../auth.routes.ts';
 import { db } from '../../../db/index.ts';
 import { users, refreshTokens } from '../../../db/schema/index.ts';
 import { eq } from 'drizzle-orm';
+import { sanitizeInput, preventNoSQLInjection } from '../../../middleware/sanitize.middleware.ts';
 
 describe('Authentication API Integration Tests', () => {
   let app: Express;
 
   beforeAll(() => {
-    // Setup Express app for testing
+    // Setup Express app for testing (matching production setup)
     app = express();
     app.use(express.json());
     app.use(cookieParser()); // Required for HttpOnly cookies
+    
+    // Security middleware (same as production)
+    app.use(preventNoSQLInjection);
+    app.use(sanitizeInput);
+    
     app.use('/api/auth', authRoutes);
 
     // Error handler
