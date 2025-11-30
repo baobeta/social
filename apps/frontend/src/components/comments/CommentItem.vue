@@ -109,51 +109,6 @@
         {{ comment.content }}
       </p>
 
-      <!-- Reply button and form -->
-      <div v-if="!isEditing" class="mt-2">
-        <Button
-          v-if="!showReplyForm"
-          data-ci="comment-reply-button"
-          label="Reply"
-          text
-          size="small"
-          icon="pi pi-reply"
-          class="text-gray-600 hover:text-primary-600"
-          @click="showReplyForm = true"
-        />
-
-        <!-- Reply form -->
-        <div v-if="showReplyForm" class="mt-3 flex flex-col gap-3 pl-4 border-l-2 border-gray-200">
-          <Textarea
-            data-ci="comment-reply-textarea"
-            v-model="replyContent"
-            placeholder="Write a reply..."
-            :autoResize="true"
-            rows="2"
-            class="w-full text-sm border-gray-200 focus:border-primary-400 focus:ring-primary-400 rounded-lg"
-            :disabled="replyLoading"
-          />
-          <div class="flex justify-end gap-2">
-            <Button
-              label="Cancel"
-              size="small"
-              severity="secondary"
-              @click="cancelReply"
-              :disabled="replyLoading"
-              class="rounded-button"
-            />
-            <Button
-              data-ci="comment-reply-submit-button"
-              label="Reply"
-              size="small"
-              class="bg-primary-500 hover:bg-primary-600 border-primary-500 hover:border-primary-600 rounded-button font-medium transition-colors"
-              @click="saveReply"
-              :disabled="!replyContent.trim() || replyLoading"
-              :loading="replyLoading"
-            />
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
