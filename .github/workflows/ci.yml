@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+env:
+  NODE_VERSION: '20'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: social_media_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+
+      - name: Verify test database exists
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "SELECT 1 FROM pg_database WHERE datname = 'social_media_test'" | grep -q 1 && \
+          echo "Test database already exists" || \
+          (psql -h localhost -U postgres -c "CREATE DATABASE social_media_test" && echo "Test database created")
+
+      - name: Setup test database migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/social_media_test
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/social_media_test
+          E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/social_media_e2e
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-key-for-ci
+          NODE_ENV: test
+        run: |
+          cd apps/backend
+          NODE_ENV=test npm run db:migrate
+
+      - name: Run backend unit and integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/social_media_test
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/social_media_test
+          E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/social_media_e2e
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-key-for-ci
+          NODE_ENV: test
+        run: |
+          cd apps/backend
+          npm test
+
+  build:
+    name: Build Project
+    needs: test
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend
+        env:
+          NODE_ENV: production
+        run: |
+          cd apps/backend
+          npm run build
+
+      - name: Build frontend
+        env:
+          NODE_ENV: production
+        run: |
+          cd apps/frontend
+          npm run build
+
+      - name: Upload backend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: apps/backend/dist
+          retention-days: 7
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: apps/frontend/dist
+          retention-days: 7
+
+      - name: Upload package files
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-files
+          path: |
+            package.json
+            package-lock.json
+            apps/backend/package.json
+            apps/frontend/package.json
+          retention-days: 7
+
