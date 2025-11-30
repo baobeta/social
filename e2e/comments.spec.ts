@@ -132,10 +132,6 @@ test.describe('Comments', () => {
     await expect(page.locator('[data-ci="comment-card"]').filter({ hasText: 'Comment to be deleted' })).not.toBeVisible();
   });
 
-  // Nested comments are not supported - only root-level comments
-  test.skip('should display nested comment structure', async ({ authenticatedPage: page, request }) => {
-    // This feature is not implemented - only root-level comments are supported
-  });
 
   test('should display comment metadata', async ({ authenticatedPage: page, request }) => {
     // Create post and comment
