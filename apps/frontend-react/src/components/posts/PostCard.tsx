@@ -97,9 +97,10 @@ function PostCardHeader({ post, getInitials }: { post: Post, getInitials: (name:
 
 export default function PostCard({ post, loading = false, onEdit, onDelete }: PostCardProps) {
   const { user, isAdmin, getInitials } = useAuth();
-  const canEdit = user?.id === post.authorId || isAdmin;
-  const canDelete = user?.id === post.authorId || isAdmin;
-  const allowShowActions = canEdit || canDelete;
+  const canEdit = user?.id === post.author.id || isAdmin;
+  const canDelete = user?.id === post.author.id || isAdmin;
+  // If the post is deleted, don't show the actions
+  const allowShowActions = !post.isDeleted && (canEdit || canDelete);
   const deletedClass = post.isDeleted ? 'border-red-200 bg-red-50' : 'border-gray-100';
 
 

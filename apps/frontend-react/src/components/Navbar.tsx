@@ -45,7 +45,7 @@ function UserProfile({ user, getInitials }: { user: User, getInitials: (name: st
         {getInitials(user.fullName)}
       </div>
       <div>
-        <div className="text-right">
+        <div className="text-left">
           <div className="text-sm font-semibold text-gray-800">{user.fullName}</div>
           <div className="flex items-center gap-1"><UserRoleBadge role={user.role} /> <div className="text-xs text-gray-500">@{user.username}</div></div>
         </div>

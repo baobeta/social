@@ -8,6 +8,7 @@ import CreatePostForm from '@/components/timeline/CreatePostForm';
 import PostsList from '@/components/timeline/PostsList';
 import PostCard from '@/components/posts/PostCard';
 import EditPostDialog from '@/components/timeline/EditPostDialog';
+import DeletePostDialog from '@/components/timeline/DeletePostDialog';
 import type { Post } from '@/types/post';
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -35,6 +36,8 @@ export default function TimelineView() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [isEditDialogVisible, setIsEditDialogVisible] = useState(false);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+  const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState(false);
 
   const {
     data: postsData,
@@ -97,6 +100,8 @@ export default function TimelineView() {
   const deletePostMutation = useMutation({
     mutationFn: postsService.deletePost,
     onSuccess: () => {
+      setDeletingPostId(null);
+      setIsDeleteDialogVisible(false);
       queryClient.invalidateQueries({ queryKey: ['posts'] });
     },
   });
@@ -124,9 +129,19 @@ export default function TimelineView() {
   }
 
   function handleDeletePost(post: Post) {
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      deletePostMutation.mutate(post.id);
+    setDeletingPostId(post.id);
+    setIsDeleteDialogVisible(true);
+  }
+
+  function confirmDelete() {
+    if (deletingPostId) {
+      deletePostMutation.mutate(deletingPostId);
     }
+  }
+
+  function cancelDelete() {
+    setDeletingPostId(null);
+    setIsDeleteDialogVisible(false);
   }
 
   function handleLoadMore() {
@@ -159,7 +174,7 @@ export default function TimelineView() {
             <PostCard
               key={post.id}
               post={post}
-              loading={editingPostId === post.id || deletePostMutation.isPending}
+              loading={editingPostId === post.id || (deletingPostId === post.id && deletePostMutation.isPending)}
               onEdit={() => startEditPost(post)}
               onDelete={() => handleDeletePost(post)}
             />
@@ -173,6 +188,12 @@ export default function TimelineView() {
         onContentChange={setEditContent}
         onSave={saveEdit}
         onCancel={cancelEdit}
+      />
+      <DeletePostDialog
+        visible={isDeleteDialogVisible}
+        loading={deletePostMutation.isPending}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
       />
     </div>
   );
