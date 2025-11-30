@@ -171,32 +171,6 @@ function cancelEdit() {
   editContent.value = '';
 }
 
-function cancelReply() {
-  showReplyForm.value = false;
-  replyContent.value = '';
-}
-
-async function saveReply() {
-  if (!replyContent.value.trim()) return;
-
-  replyLoading.value = true;
-  try {
-    const response = await commentsService.createComment({
-      postId: props.comment.postId,
-      content: replyContent.value,
-      parentId: props.comment.id,
-    });
-    showReplyForm.value = false;
-    replyContent.value = '';
-    emit('commentUpdated', response.data.comment);
-  } catch (error) {
-    console.error('Failed to create reply:', error);
-    alert('Failed to create reply. Please try again.');
-  } finally {
-    replyLoading.value = false;
-  }
-}
-
 async function saveEdit() {
   if (!editContent.value.trim()) return;
 
