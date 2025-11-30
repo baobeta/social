@@ -18,11 +18,17 @@ npm run db:migrate || {
 }
 echo "✅ Migrations completed"
 
-echo "🌱 Seeding database..."
+echo "🌱 Seeding database (admin user)..."
 npm run db:seed || {
   echo "⚠️  Seed failed (might already be seeded)"
 }
-echo "✅ Seed completed"
+echo "✅ Admin seed completed"
+
+echo "📝 Seeding posts and comments..."
+npm run db:seed:posts || {
+  echo "⚠️  Posts/comments seed failed (might already be seeded)"
+}
+echo "✅ Posts/comments seed completed"
 
 echo "🎯 Starting backend server..."
 exec npm run dev:backend
