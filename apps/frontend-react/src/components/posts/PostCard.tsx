@@ -94,7 +94,7 @@ function PostCardHeader({ post, getInitials }: { post: Post, getInitials: (name:
   );
 }
 
-
+// NOTE: Not sure we should add max with in this case, but for now it is ok
 export default function PostCard({ post, loading = false, onEdit, onDelete }: PostCardProps) {
   const { user, isAdmin, getInitials } = useAuth();
   const canEdit = user?.id === post.author.id || isAdmin;
