@@ -31,14 +31,45 @@ app.use(customSecurityHeaders);
 app.use(cookieParser());
 
 // CORS configuration with credentials support for HttpOnly cookies
+logger.info({ allowedOrigins: config.cors.origin }, 'CORS configuration');
 app.use(cors({
   origin: config.cors.origin,
-  credentials: true, // IMPORTANT: Allow cookies to be sent
+  credentials: true,
 }));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' })); // Limit payload size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  logger.info({
+    method: req.method,
+    url: req.url,
+    path: req.path,
+    query: req.query,
+    body: req.body,
+    headers: {
+      'content-type': req.headers['content-type'],
+      origin: req.headers.origin,
+      'user-agent': req.headers['user-agent'],
+    },
+    ip: req.ip,
+  }, 'Incoming request');
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info({
+      method: req.method,
+      url: req.url,
+      statusCode: res.statusCode,
+      duration: `${duration}ms`,
+    }, 'Request completed');
+  });
+
+  next();
+});
 
 // Security middleware - must be before routes
 app.use(preventNoSQLInjection); // Prevent NoSQL injection attacks
