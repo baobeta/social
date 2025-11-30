@@ -32,7 +32,8 @@
     "docker:down": "docker-compose down",
     "db:migrate": "npm run db:migrate -w @social/backend",
     "db:seed": "npm run db:seed -w @social/backend",
-    "db:studio": "npm run db:studio -w @social/backend"
+    "db:studio": "npm run db:studio -w @social/backend",
+    "setup": "bash scripts/setup.sh"
   },
   "keywords": [
     "social",
